@@ -1,3 +1,4 @@
+
 # Scout — ETHOnline 2026 Hackathon Strategy & Full E2E Product Specification
 
 > **Working name:** Scout  
