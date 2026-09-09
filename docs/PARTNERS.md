@@ -2,7 +2,8 @@
 
 ## The Graph
 - Subgraph MCP SSE: `https://subgraphs.mcp.thegraph.com/sse`
-- Messari Lending/CDP schema 3.1.0
+- **Composable Messari Lending/CDP** — one `LendingProtocolMetrics` query × N Base protocols (Moonwell, Seamless, Compound V3, QiDao) via `packages/graph/src/registry/lending-cdp.json`
+- Messari schema 2.x / 3.x lowest-common-field query in `packages/graph/src/queries.ts`
 - Optional x402: `testnet.gateway.thegraph.com/api/x402`
 
 ## OpenSEO

@@ -50,7 +50,10 @@ function ResearchDetailContent({ id }: { id: string }) {
             <div className="lg:col-span-2 space-y-8">
               <ResearchTimeline entries={timelineLogs} loading={loading} />
               {session?.scoreBreakdown && session.status !== "completed" && (
-                <CandidateComparison candidates={session.scoreBreakdown.candidates} />
+                <CandidateComparison
+                  candidates={session.scoreBreakdown.candidates}
+                  rawCandidates={session.candidates}
+                />
               )}
               <TechnicalView />
             </div>

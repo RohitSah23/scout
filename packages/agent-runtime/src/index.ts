@@ -122,23 +122,38 @@ export async function runResearch(opts: RunResearchOptions): Promise<ResearchSes
       sources: Source[];
       queryTemplate: string;
       protocolCount: number;
+      messariProtocolCount: number;
+      composable: boolean;
+      schemaStandard: string;
+      skipped: string[];
     };
 
     emit(
       runtime,
-      `Found ${graphResult.protocolCount} relevant lending deployments.`,
+      `Found ${graphResult.protocolCount} lending deployments on ${opts.chain ?? "base"} (${graphResult.messariProtocolCount} Messari-composable).`,
       "info",
       "graph.query",
-      { protocolCount: graphResult.protocolCount, queryTemplate: graphResult.queryTemplate },
+      {
+        protocolCount: graphResult.protocolCount,
+        messariProtocolCount: graphResult.messariProtocolCount,
+        queryTemplate: graphResult.queryTemplate,
+        composable: graphResult.composable,
+        schemaStandard: graphResult.schemaStandard,
+        skipped: graphResult.skipped,
+      },
     );
     emit(
       runtime,
-      `Using standard schema — 1 query × ${graphResult.protocolCount} protocols.`,
+      `Composable query — 1 Messari template × ${graphResult.messariProtocolCount} protocols${graphResult.protocolCount > graphResult.messariProtocolCount ? ` (+ ${graphResult.protocolCount - graphResult.messariProtocolCount} native adapter)` : ""}.`,
       "info",
       "graph.complete",
       {
         deployments: graphResult.protocolCount,
-        evidence: ["active users", "transactions", "TVL", "volume"],
+        messariProtocolCount: graphResult.messariProtocolCount,
+        composable: graphResult.composable,
+        schemaStandard: graphResult.schemaStandard,
+        skipped: graphResult.skipped,
+        evidence: ["TVL", "deposit/borrow volume", "liquidations", "unique users"],
       },
     );
 

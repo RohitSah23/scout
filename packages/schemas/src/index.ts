@@ -257,8 +257,10 @@ export const MessariDeploymentSchema = z.object({
   subgraphId: z.string(),
   deploymentId: z.string(),
   schemaVersion: z.string(),
+  methodologyVersion: z.string().optional(),
   queryKind: GraphQueryKindSchema.default("messari"),
   category: z.literal("lending-cdp"),
+  messariSlug: z.string().optional(),
 });
 
 export type MessariDeployment = z.infer<typeof MessariDeploymentSchema>;

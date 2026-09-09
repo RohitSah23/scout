@@ -13,7 +13,7 @@ export function CandidateFunnel({ session }: { session: ResearchSession | null }
   const stages = [
     { label: "protocols", value: protocolCount || (count > 0 ? 100 : 0) },
     { label: "candidates", value: count || (scored > 0 ? scored : 0) },
-    { label: "candidates", value: scored > 0 ? Math.min(scored, 3) : count },
+    { label: "scored", value: scored > 0 ? scored : count },
     ...(hasDecision ? [{ label: "decision", value: 1 }] : []),
   ].filter((s) => s.value > 0);
 

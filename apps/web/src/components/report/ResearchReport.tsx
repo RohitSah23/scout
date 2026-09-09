@@ -72,7 +72,10 @@ export function ResearchReport({
             <CombinedSignalView candidate={winner} />
           </div>
 
-          <CandidateComparison candidates={session.scoreBreakdown?.candidates ?? []} />
+          <CandidateComparison
+            candidates={session.scoreBreakdown?.candidates ?? []}
+            rawCandidates={session.candidates}
+          />
 
           {rec.why && (
             <div>

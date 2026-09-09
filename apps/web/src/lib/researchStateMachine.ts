@@ -97,7 +97,7 @@ export function agentStateMessage(
   session: ResearchSession | null,
 ): string {
   const count = session?.candidates.length ?? 0;
-  const top = session?.scoreBreakdown?.candidates.slice(0, 3) ?? [];
+  const scoredCount = session?.scoreBreakdown?.candidates.length ?? 0;
 
   switch (state) {
     case "SEARCHING":
@@ -107,9 +107,11 @@ export function agentStateMessage(
         ? `Analyzing on-chain activity across ${count} candidates.`
         : "Inspecting live on-chain data.";
     case "COMPARING":
-      return top.length > 0
-        ? `Comparing ${top.length} remaining candidates.`
-        : "Normalizing and comparing candidate signals.";
+      return scoredCount > 0
+        ? `Comparing ${scoredCount} candidates.`
+        : count > 0
+          ? `Comparing ${count} candidates.`
+          : "Normalizing and comparing candidate signals.";
     case "UNCERTAIN":
       return "Top candidates are too close to separate confidently.";
     case "PURCHASING":

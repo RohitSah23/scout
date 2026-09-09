@@ -70,8 +70,9 @@ export function buildGapSignal(
       (onchain?.activeAddressesChangePct ?? 0)) /
     3;
   const search = seo?.searchDemandChangePct ?? 0;
+  const fmt = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
   if (onchainAvg > 20 && search < 15) {
-    return `on-chain +${onchainAvg.toFixed(1)}% but search +${search.toFixed(1)}%`;
+    return `on-chain ${fmt(onchainAvg)} but search ${fmt(search)}`;
   }
   return undefined;
 }

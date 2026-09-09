@@ -1,56 +1,43 @@
 "use client";
 
-import type { CandidateScore } from "@scout/schemas";
-import { formatScore } from "@/lib/formatScore";
-import { DIMENSION_LABELS } from "@/lib/researchStateMachine";
+import type { Candidate, CandidateScore } from "@scout/schemas";
+import { CandidateScoreCard } from "./CandidateScoreCard";
 
-export function CandidateComparison({ candidates }: { candidates: CandidateScore[] }) {
-  const top = candidates.slice(0, 3);
+export function CandidateComparison({
+  candidates,
+  rawCandidates,
+}: {
+  candidates: CandidateScore[];
+  rawCandidates?: Candidate[];
+}) {
+  const ranked = [...candidates].sort((a, b) => a.rank - b.rank || b.composite - a.composite);
+
+  if (ranked.length === 0) return null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
         <h2 className="font-display text-2xl uppercase">
-          {top.length} Candidates Remain
+          {ranked.length} Candidate{ranked.length === 1 ? "" : "s"} Ranked
         </h2>
-        <div className="h-[3px] w-16 bg-ink mt-2" />
+        <p className="mt-2 text-sm text-ink/60 max-w-2xl">
+          Full score breakdown for every protocol — on-chain, search, competitive gap, and evidence
+          confidence side by side.
+        </p>
+        <div className="h-[3px] w-16 bg-ink mt-3" />
       </div>
 
-      {top.map((c, i) => (
-        <div
-          key={c.protocol}
-          className={`border-brutal p-6 ${i === 0 ? "shadow-brutal bg-paper" : "bg-paper-muted opacity-90"}`}
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <span className="font-mono text-xs text-ink/50">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <h3 className="font-display text-xl uppercase mt-1">{c.protocol}</h3>
-            </div>
-            <span className="font-mono text-4xl font-bold tabular-nums">{formatScore(c.composite)}</span>
-          </div>
-
-          <div className="mt-4 h-1 bg-ink/20">
-            <div className="h-full bg-signal" style={{ width: `${c.composite}%` }} />
-          </div>
-
-          {i === 0 && (
-            <div className="mt-6 grid grid-cols-2 gap-3 font-mono text-xs">
-              {c.dimensions.slice(0, 6).map((d) => (
-                <div key={d.key} className="flex justify-between">
-                  <span className="text-ink/60">{DIMENSION_LABELS[d.key]}</span>
-                  <span>{formatScore(d.score)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {c.gapSignal && i === 0 && (
-            <p className="mt-4 text-sm text-warning border-t border-ink/20 pt-4">{c.gapSignal}</p>
-          )}
-        </div>
-      ))}
+      <div className="space-y-5">
+        {ranked.map((c, i) => (
+          <CandidateScoreCard
+            key={`${c.protocol}-${c.chain}-${i}`}
+            candidate={c}
+            rank={c.rank || i + 1}
+            rawCandidates={rawCandidates}
+            highlighted={i === 0}
+          />
+        ))}
+      </div>
     </div>
   );
 }

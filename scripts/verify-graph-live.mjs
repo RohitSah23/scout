@@ -8,6 +8,9 @@ const graph = new GraphProvider(process.env.GRAPH_GATEWAY_API_KEY);
 const result = await graph.execute({ action: "query-all", chain: "base" });
 
 console.log("protocolCount:", result.protocolCount);
+console.log("messariProtocolCount:", result.messariProtocolCount);
+console.log("composable:", result.composable, "| standard:", result.schemaStandard);
+if (result.skipped?.length) console.log("skipped:", result.skipped.join("; "));
 console.log("candidates:");
 for (const c of result.candidates) {
   console.log(

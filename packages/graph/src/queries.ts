@@ -1,5 +1,11 @@
 import type { GraphQueryKind } from "@scout/schemas";
 
+/**
+ * Messari Lending/CDP composable query — same GraphQL executed against every
+ * Messari-standard deployment in the registry (1 query × N protocols).
+ */
+export const MESSARI_LENDING_STANDARD = "messari-lending-cdp";
+
 export const LENDING_QUERY_TEMPLATE = `
 query LendingProtocolMetrics($first: Int!) {
   protocols(first: $first) {
@@ -9,29 +15,14 @@ query LendingProtocolMetrics($first: Int!) {
     schemaVersion
     methodologyVersion
     totalValueLockedUSD
-    cumulativeVolumeUSD
     cumulativeUniqueUsers
-    totalDepositBalanceUSD
-    totalBorrowBalanceUSD
   }
   marketDailySnapshots(first: 30, orderBy: timestamp, orderDirection: desc) {
     timestamp
     totalValueLockedUSD
-    dailyActiveUsers
-    dailyDepositVolumeUSD
-    dailyBorrowVolumeUSD
-    dailyLiquidateVolumeUSD
-  }
-}
-`;
-
-export const LENDING_QUERY_FALLBACK = `
-query ProtocolOverview {
-  financialMetricsDailySnapshots(first: 30, orderBy: timestamp, orderDirection: desc) {
-    timestamp
-    totalValueLockedUSD
-    dailyActiveUsers
-    dailyTransactionCount
+    dailyDepositUSD
+    dailyBorrowUSD
+    dailyLiquidateUSD
   }
 }
 `;
@@ -49,25 +40,22 @@ query AaveV3BaseMetrics {
 }
 `;
 
-export const COMPOUND_V3_QUERY = `
-query CompoundV3DailyMetrics {
-  dailyProtocolAccountings(first: 30, orderBy: timestamp, orderDirection: desc) {
-    timestamp
-    accounting {
-      totalSupplyUsd
-      totalBorrowUsd
-    }
-  }
-}
-`;
-
 export function queryForKind(kind: GraphQueryKind): string {
-  switch (kind) {
-    case "aave-v3":
-      return AAVE_V3_QUERY;
-    case "compound-v3":
-      return COMPOUND_V3_QUERY;
-    default:
-      return LENDING_QUERY_TEMPLATE;
+  if (kind === "aave-v3") return AAVE_V3_QUERY;
+  return LENDING_QUERY_TEMPLATE;
+}
+
+export function queryBodyForKind(
+  kind: GraphQueryKind = "messari",
+): { query: string; variables?: Record<string, unknown> } {
+  const query = queryForKind(kind);
+  if (kind === "messari") {
+    return { query, variables: { first: 1 } };
   }
+  return { query };
+}
+
+/** @deprecated Use queryBodyForKind */
+export function composableQueryBody(): { query: string; variables: { first: number } } {
+  return queryBodyForKind("messari") as { query: string; variables: { first: number } };
 }

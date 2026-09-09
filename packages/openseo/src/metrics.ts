@@ -54,6 +54,13 @@ function protocolTokens(protocol: string): string[] {
   if (lower.includes("moonwell")) tokens.push("moonwell");
   if (lower.includes("seamless")) tokens.push("seamless");
   if (lower.includes("spark")) tokens.push("spark");
+  if (lower.includes("maker")) tokens.push("makerdao", "maker");
+  if (lower.includes("euler")) tokens.push("euler");
+  if (lower.includes("liquity")) tokens.push("liquity");
+  if (lower.includes("morpho")) tokens.push("morpho");
+  if (lower.includes("radiant")) tokens.push("radiant");
+  if (lower.includes("sonne")) tokens.push("sonne");
+  if (lower.includes("qidao") || lower.includes("qi dao")) tokens.push("qidao");
   return [...new Set(tokens)];
 }
 
