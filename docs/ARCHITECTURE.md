@@ -4,8 +4,8 @@ Scout is a TypeScript monorepo with adapter-based partner integrations.
 
 ## Apps
 
-- `apps/web` — Next.js chat UI with decision log, scoring report, Privy panel
-- `apps/api` — Hono REST + SSE + x402-gated deep analysis + Bazantic recipe endpoint
+- `apps/web` — Next.js multi-route product UI (Research, Reports, Agent) with neo-brutalist design system, investigation timeline, payment authorization, and evidence drawer
+- `apps/api` — Hono REST + typed SSE + payment pause/resume + research list + x402-gated deep analysis + Bazantic recipe endpoint
 - `apps/agent` — CLI orchestrator
 
 ## Packages
@@ -27,7 +27,16 @@ Scout is a TypeScript monorepo with adapter-based partner integrations.
 2. Graph: discover + query standardized lending subgraphs
 3. OpenSEO: enrich with web/SEO metrics
 4. Scoring: provisional rank → uncertainty gate
-5. x402: optional deep analysis payment via Privy policy
-6. ENS: write research.status on completion
-7. OpenRouter: narrate final recommendation from fixed score breakdown
-8. SSE streams decision log to web UI
+5. If uncertain: pause at `awaiting_payment`, emit `payment.required` SSE event; user authorizes via `POST /research/:id/authorize-payment`
+6. x402: deep analysis payment via Privy policy (after authorization)
+7. ENS: write research.status on completion
+8. OpenRouter: narrate final recommendation from fixed score breakdown
+9. Typed SSE events (`graph.discovery`, `payment.required`, etc.) stream to web UI; `GET /research` lists completed sessions
+
+## Web routes
+
+- `/` — Landing + research composer
+- `/research/new` — Mission configuration
+- `/research/[id]` — Live investigation + report tabs
+- `/reports` — Completed research library
+- `/agent` — Agent identity, permissions, treasury

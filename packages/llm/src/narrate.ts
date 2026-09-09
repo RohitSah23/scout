@@ -31,9 +31,15 @@ function templateNarration(input: NarrationInput): NarrationResult {
   };
 }
 
+export class NarrationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NarrationError";
+  }
+}
+
 export async function narrateRecommendation(input: NarrationInput): Promise<NarrationResult> {
   const winner = input.scoreBreakdown.candidates[0];
-  const fallback = templateNarration(input);
 
   const systemPrompt = `You are Scout, an autonomous Web3 protocol research agent.
 You narrate research results. You do NOT invent scores — use only the provided score breakdown.
@@ -57,25 +63,37 @@ Write a concise recommendation for a developer looking to build on the winning p
     { role: "user", content: userPrompt },
   ]);
 
-  if (!raw) return fallback;
+  if (!raw) {
+    throw new NarrationError(
+      "OPENROUTER_API_KEY is required for LLM narration. Set it in .env (see docs/API_KEYS.md).",
+    );
+  }
 
   try {
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return fallback;
+    if (!jsonMatch) {
+      throw new NarrationError("OpenRouter returned a non-JSON narration response");
+    }
     const parsed = JSON.parse(jsonMatch[0]) as {
       summary?: string;
       why?: string[];
       action?: string;
     };
-    if (!parsed.summary || !parsed.action) return fallback;
+    if (!parsed.summary || !parsed.action) {
+      throw new NarrationError("OpenRouter narration JSON missing summary or action");
+    }
+    const fallback = templateNarration(input);
     return {
       summary: parsed.summary,
       why: Array.isArray(parsed.why) && parsed.why.length > 0 ? parsed.why : fallback.why,
       action: parsed.action,
       source: "openrouter",
     };
-  } catch {
-    return fallback;
+  } catch (err) {
+    if (err instanceof NarrationError) throw err;
+    throw new NarrationError(
+      err instanceof Error ? err.message : "Failed to parse OpenRouter narration",
+    );
   }
 }
 

@@ -1,0 +1,23 @@
+:root {
+  --ink: #0a0a0a;
+  --paper: #f5f0e8;
+  --paper-muted: #ebe4d8;
+  --paper-dark: #1a1a1a;
+  --signal: #e85d04;
+  --success: #1a6b3c;
+  --warning: #b45309;
+  --error: #991b1b;
+  --border-width: 2px;
+  --shadow-offset: 4px 4px 0 var(--ink);
+  --radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

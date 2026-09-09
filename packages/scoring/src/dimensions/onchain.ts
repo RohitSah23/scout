@@ -1,4 +1,5 @@
-import type { Candidate, DimensionKey, DimensionScore, OnchainMetrics } from "@scout/schemas";
+import type { DimensionKey, DimensionScore, OnchainMetrics } from "@scout/schemas";
+import { toScore } from "../util.js";
 
 export const DIMENSION_WEIGHTS: Record<DimensionKey, number> = {
   onchainGrowth: 0.3,
@@ -20,7 +21,7 @@ export function scoreOnchainGrowth(
   const tvl = metrics?.tvlChangePct ?? 0;
   const vol = metrics?.volumeChangePct ?? 0;
   const tx = metrics?.txChangePct ?? 0;
-  const score = Math.round(
+  const score = toScore(
     normalizePctChange(tvl) * 0.35 +
       normalizePctChange(vol) * 0.35 +
       normalizePctChange(tx) * 0.3,
@@ -29,7 +30,7 @@ export function scoreOnchainGrowth(
     key: "onchainGrowth",
     weight: DIMENSION_WEIGHTS.onchainGrowth,
     score,
-    rationale: `TVL ${tvl >= 0 ? "+" : ""}${tvl.toFixed(0)}%, volume ${vol >= 0 ? "+" : ""}${vol.toFixed(0)}%, txs ${tx >= 0 ? "+" : ""}${tx.toFixed(0)}%`,
+    rationale: `TVL ${tvl >= 0 ? "+" : ""}${tvl.toFixed(1)}%, volume ${vol >= 0 ? "+" : ""}${vol.toFixed(1)}%, txs ${tx >= 0 ? "+" : ""}${tx.toFixed(1)}%`,
     evidenceIds,
   };
 }
@@ -40,18 +41,16 @@ export function scoreUserGrowth(
 ): DimensionScore {
   const active = metrics?.activeAddressesChangePct ?? 0;
   const newUsers = metrics?.newUsersChangePct ?? 0;
-  let score = Math.round(
-    normalizePctChange(active) * 0.6 + normalizePctChange(newUsers) * 0.4,
-  );
+  let score = toScore(normalizePctChange(active) * 0.6 + normalizePctChange(newUsers) * 0.4);
   const tx = metrics?.txChangePct ?? 0;
   if (tx > 30 && active < 5) {
-    score = Math.max(0, score - 20);
+    score = toScore(score - 20);
   }
   return {
     key: "userGrowth",
     weight: DIMENSION_WEIGHTS.userGrowth,
     score,
-    rationale: `Active addresses ${active >= 0 ? "+" : ""}${active.toFixed(0)}%, new users ${newUsers >= 0 ? "+" : ""}${newUsers.toFixed(0)}%`,
+    rationale: `Active addresses ${active >= 0 ? "+" : ""}${active.toFixed(1)}%, new users ${newUsers >= 0 ? "+" : ""}${newUsers.toFixed(1)}%`,
     evidenceIds,
   };
 }

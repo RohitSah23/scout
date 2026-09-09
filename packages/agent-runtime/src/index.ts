@@ -2,77 +2,98 @@ import { randomUUID } from "node:crypto";
 import type {
   Budget,
   DecisionLogEntry,
+  ResearchEventType,
   ResearchSession,
   Source,
 } from "@scout/schemas";
 import { GraphProvider } from "@scout/graph";
 import { OpenSEOProvider } from "@scout/openseo";
-import { DEEP_ANALYSIS_PRICE_USD } from "@scout/deep-analysis";
 import {
   buildScoreBreakdown,
-  evaluateUncertaintyGate,
-  normalizePeerScores,
   scoreCandidate,
+  type CandidateScore,
   type ScoringContext,
 } from "@scout/scoring";
 import { narrateRecommendation, toRecommendation } from "@scout/llm";
-import { createENSIdentity } from "@scout/ens";
-import { createDefaultPolicy, PrivyWalletProvider } from "@scout/privy";
-import { runDeepAnalysis } from "@scout/deep-analysis";
 
 export type LogCallback = (entry: DecisionLogEntry) => void;
+export type SessionUpdateCallback = (session: ResearchSession) => void;
 
 export interface RunResearchOptions {
   researchId?: string;
   request: string;
-  budget: number;
+  budget?: number;
   chain?: string;
-  projectName?: string;
+  category?: string;
   graphApiKey?: string;
   openseoApiKey?: string;
-  payToAddresses?: string[];
+  openseoProjectId?: string;
   onLog?: LogCallback;
+  onSessionUpdate?: SessionUpdateCallback;
 }
 
-function log(onLog: LogCallback | undefined, message: string, level: DecisionLogEntry["level"] = "info") {
-  onLog?.({ timestamp: new Date().toISOString(), message, level });
+interface ResearchRuntime {
+  onLog: LogCallback;
+  onSessionUpdate?: SessionUpdateCallback;
+  decisionLog: DecisionLogEntry[];
+}
+
+function emit(
+  runtime: ResearchRuntime,
+  message: string,
+  level: DecisionLogEntry["level"] = "info",
+  eventType?: ResearchEventType,
+  payload?: Record<string, unknown>,
+) {
+  const entry: DecisionLogEntry = {
+    timestamp: new Date().toISOString(),
+    message,
+    level,
+    eventType,
+    payload,
+  };
+  runtime.decisionLog.push(entry);
+  runtime.onLog(entry);
+}
+
+function touchSession(session: ResearchSession, runtime: ResearchRuntime) {
+  session.updatedAt = new Date().toISOString();
+  session.decisionLog = [...runtime.decisionLog];
+  runtime.onSessionUpdate?.(session);
+}
+
+function createRuntime(
+  opts: Pick<RunResearchOptions, "onLog" | "onSessionUpdate">,
+  decisionLog: DecisionLogEntry[] = [],
+): ResearchRuntime {
+  const onLog = (entry: DecisionLogEntry) => {
+    decisionLog.push(entry);
+    opts.onLog?.(entry);
+  };
+  return { onLog, onSessionUpdate: opts.onSessionUpdate, decisionLog };
 }
 
 export async function runResearch(opts: RunResearchOptions): Promise<ResearchSession> {
   const researchId = opts.researchId ?? randomUUID();
   const now = new Date().toISOString();
   const budget: Budget = {
-    initial: opts.budget,
+    initial: opts.budget ?? 0.5,
     spent: 0,
-    remaining: opts.budget,
+    remaining: opts.budget ?? 0.5,
     currency: "USDC",
     perRequestCap: 0.1,
   };
 
   const decisionLog: DecisionLogEntry[] = [];
-  const onLog = (entry: DecisionLogEntry) => {
-    decisionLog.push(entry);
-    opts.onLog?.(entry);
-  };
-
-  const ens = createENSIdentity(opts.projectName ?? "project", opts.budget);
-  const ensName = await ens.resolveName();
-  log(onLog, "Task received.");
-  log(onLog, `Agent identity: ${ensName}`);
-
-  const payToList = opts.payToAddresses ?? [
-    process.env.X402_PAY_TO_ADDRESS ?? "0xscoutdeepanalysis",
-    "0xgraphgateway",
-  ];
-  const policy = createDefaultPolicy(payToList, opts.budget);
-  policy.ensBudgetCap = await ens.getBudgetCap();
-  const wallet = new PrivyWalletProvider(policy);
+  const runtime = createRuntime(opts, decisionLog);
 
   const session: ResearchSession = {
     researchId,
     status: "running",
     request: opts.request,
-    agent: { ensName, wallet: await wallet.getAddress() },
+    chain: opts.chain ?? "base",
+    category: opts.category ?? "lending",
+    agent: { name: "scout" },
     budget,
     sources: [],
     candidates: [],
@@ -81,149 +102,162 @@ export async function runResearch(opts: RunResearchOptions): Promise<ResearchSes
     updatedAt: now,
   };
 
-  log(onLog, "Identified 4 required evidence categories: on-chain, web, scoring, optional paid deep dive.");
+  try {
+    if (!opts.graphApiKey) {
+      throw new Error("GRAPH_GATEWAY_API_KEY is required for live on-chain data.");
+    }
+    if (!opts.openseoApiKey) {
+      throw new Error("OPENSEO_API_KEY is required for live web/SEO data.");
+    }
 
-  const graph = new GraphProvider(opts.graphApiKey);
-  log(onLog, "Graph Subgraph discovery started.");
-  const graphResult = await graph.execute({ action: "query-all", chain: opts.chain ?? "base" }) as {
-    candidates: ResearchSession["candidates"];
-    sources: Source[];
-    queryTemplate: string;
-    protocolCount: number;
-  };
+    emit(runtime, "Mission received.", "info", "mission.received", { request: opts.request });
+    emit(runtime, "Research plan created.", "info", "plan.created", {
+      categories: ["on-chain activity", "user growth", "liquidity", "search demand", "competition"],
+    });
 
-  log(onLog, `Found ${graphResult.protocolCount} relevant Messari Lending/CDP deployments.`);
-  log(onLog, `Using standard schema — 1 query × ${graphResult.protocolCount} protocols.`);
+    const graph = new GraphProvider(opts.graphApiKey);
+    emit(runtime, "Graph Subgraph discovery started.", "info", "graph.discovery");
+    const graphResult = await graph.execute({ action: "query-all", chain: opts.chain ?? "base" }) as {
+      candidates: ResearchSession["candidates"];
+      sources: Source[];
+      queryTemplate: string;
+      protocolCount: number;
+    };
 
-  session.sources.push(...graphResult.sources);
-  let candidates = graphResult.candidates;
-  log(onLog, "Live blockchain analysis complete.");
-  log(onLog, `Shortlisted ${candidates.length} candidates.`);
+    emit(
+      runtime,
+      `Found ${graphResult.protocolCount} relevant lending deployments.`,
+      "info",
+      "graph.query",
+      { protocolCount: graphResult.protocolCount, queryTemplate: graphResult.queryTemplate },
+    );
+    emit(
+      runtime,
+      `Using standard schema — 1 query × ${graphResult.protocolCount} protocols.`,
+      "info",
+      "graph.complete",
+      {
+        deployments: graphResult.protocolCount,
+        evidence: ["active users", "transactions", "TVL", "volume"],
+      },
+    );
 
-  const openseo = new OpenSEOProvider(opts.openseoApiKey);
-  log(onLog, "OpenSEO keyword analysis started.");
-  const seoResult = await openseo.execute({ action: "enrich-candidates", candidates }) as {
-    candidates: ResearchSession["candidates"];
-    sources: Source[];
-  };
-  candidates = seoResult.candidates;
-  session.sources.push(...seoResult.sources);
-  log(onLog, "OpenSEO web intelligence complete.");
+    session.sources.push(...graphResult.sources);
+    let candidates = graphResult.candidates;
+    emit(runtime, `Shortlisted ${candidates.length} candidates.`, "info", "candidates.updated", {
+      count: candidates.length,
+      protocolCount: graphResult.protocolCount,
+      stage: "shortlist",
+    });
+    session.candidates = candidates;
+    touchSession(session, runtime);
 
+    const openseo = new OpenSEOProvider(opts.openseoApiKey, opts.openseoProjectId);
+    emit(runtime, "OpenSEO keyword analysis started.", "info", "openseo.started");
+    const seoResult = await openseo.execute({ action: "enrich-candidates", candidates }) as {
+      candidates: ResearchSession["candidates"];
+      sources: Source[];
+    };
+    candidates = seoResult.candidates;
+    session.sources.push(...seoResult.sources);
+    session.candidates = candidates;
+    emit(runtime, "OpenSEO web intelligence complete.", "info", "openseo.complete", {
+      evidence: ["search demand", "organic visibility", "content gap", "competition"],
+    });
+    touchSession(session, runtime);
+
+    const graphEvidenceId = session.sources.find((s) => s.type === "onchain")?.id ?? "graph";
+    const seoEvidenceId = session.sources.find((s) => s.type === "web")?.id ?? "seo";
+    const ctx: ScoringContext = { graphEvidenceId, seoEvidenceId, sourceCount: 2 };
+
+    const onchainRanks = candidates.map((c) => {
+      const m = c.onchainMetrics;
+      return ((m?.tvlChangePct ?? 0) + (m?.activeAddressesChangePct ?? 0)) / 2;
+    });
+    const maxRank = Math.max(...onchainRanks, 1);
+
+    const scores = candidates.map((c, i) =>
+      scoreCandidate(c, (onchainRanks[i] / maxRank) * 100, ctx, false),
+    );
+
+    const provisional = buildScoreBreakdown(scores);
+    session.scoreBreakdown = provisional;
+    session.confidence = provisional.confidence;
+    emit(runtime, `${provisional.candidates.length} candidates scored.`, "info", "scores.provisional", {
+      candidates: provisional.candidates.map((c) => ({
+        protocol: c.protocol,
+        composite: c.composite,
+        rank: c.rank,
+      })),
+      confidence: provisional.confidence,
+    });
+    touchSession(session, runtime);
+
+    return await finalizeResearch(session, runtime, candidates, scores);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Research failed";
+    emit(runtime, `Research failed: ${message}`, "warn", "research.failed", { error: message });
+    session.status = "failed";
+    touchSession(session, runtime);
+    throw err;
+  }
+}
+
+/** @deprecated Payment flow disabled — completes with existing evidence. */
+export async function runResearchPhase1(opts: RunResearchOptions): Promise<ResearchSession> {
+  return runResearch(opts);
+}
+
+/** @deprecated Payment flow disabled. */
+export async function authorizePaymentAndComplete(
+  session: ResearchSession,
+  opts: Pick<RunResearchOptions, "onLog" | "onSessionUpdate">,
+): Promise<ResearchSession> {
+  return denyPaymentAndComplete(session, opts);
+}
+
+/** @deprecated Payment flow disabled. */
+export async function denyPaymentAndComplete(
+  session: ResearchSession,
+  opts: Pick<RunResearchOptions, "onLog" | "onSessionUpdate">,
+): Promise<ResearchSession> {
+  const runtime = createRuntime(opts, [...session.decisionLog]);
   const graphEvidenceId = session.sources.find((s) => s.type === "onchain")?.id ?? "graph";
   const seoEvidenceId = session.sources.find((s) => s.type === "web")?.id ?? "seo";
   const ctx: ScoringContext = { graphEvidenceId, seoEvidenceId, sourceCount: 2 };
-
+  const candidates = session.candidates;
   const onchainRanks = candidates.map((c) => {
     const m = c.onchainMetrics;
     return ((m?.tvlChangePct ?? 0) + (m?.activeAddressesChangePct ?? 0)) / 2;
   });
   const maxRank = Math.max(...onchainRanks, 1);
-
-  let scores = candidates.map((c, i) =>
+  const scores = candidates.map((c, i) =>
     scoreCandidate(c, (onchainRanks[i] / maxRank) * 100, ctx, false),
   );
-  scores = normalizePeerScores(scores);
+  session.paymentPending = undefined;
+  session.status = "running";
+  return finalizeResearch(session, runtime, candidates, scores);
+}
 
-  const provisional = buildScoreBreakdown(scores);
-  const top2 = provisional.candidates.slice(0, 2);
-  if (top2.length >= 2 && top2[0].composite - top2[1].composite <= 8) {
-    log(onLog, `Candidate ${top2[0].protocol} and ${top2[1].protocol} remain close.`);
-  }
-
-  const gate = evaluateUncertaintyGate(
-    scores,
-    budget.remaining,
-    DEEP_ANALYSIS_PRICE_USD,
-    new Set(),
-  );
-
-  const paidProtocols = new Set<string>();
-
-  if (gate.shouldPay) {
-    log(onLog, "Deep wallet analysis required.");
-    log(onLog, `Service price = $${DEEP_ANALYSIS_PRICE_USD.toFixed(2)}.`);
-    log(onLog, `Budget check: $${budget.remaining.toFixed(2)} available.`);
-
-    const payResult = await wallet.signPayment({
-      amount: DEEP_ANALYSIS_PRICE_USD,
-      recipient: payToList[0],
-      reason: gate.reason,
-    });
-
-    if (payResult.success) {
-      log(onLog, "x402 payment signed.", "payment");
-      log(onLog, "Payment settled.", "success");
-
-      budget.spent += DEEP_ANALYSIS_PRICE_USD;
-      budget.remaining -= DEEP_ANALYSIS_PRICE_USD;
-
-      const targetProtocol = top2[0]?.protocol ?? candidates[0]?.protocol;
-      const targetCandidate = candidates.find((c) => c.protocol === targetProtocol);
-      const deep = runDeepAnalysis(targetProtocol, targetCandidate);
-
-      const paidSourceId = `deep-${targetProtocol}`;
-      session.sources.push({
-        id: paidSourceId,
-        name: "Deep Analysis",
-        type: "paid",
-        cost: DEEP_ANALYSIS_PRICE_USD,
-        payment: "x402",
-        txRef: payResult.txRef,
-        data: deep as unknown as Record<string, unknown>,
-      });
-
-      candidates = candidates.map((c) =>
-        c.protocol === targetProtocol
-          ? {
-              ...c,
-              deepAnalysis: {
-                walletGrowth: deep.wallet_growth,
-                retention: deep.retention,
-                whaleActivity: deep.whale_activity,
-                growthQuality: deep.growth_quality,
-                riskFactors: deep.risk_factors,
-                confidenceBoost: deep.confidence_boost,
-              },
-            }
-          : c,
-      );
-      paidProtocols.add(targetProtocol);
-      log(onLog, "Deep analysis received.");
-
-      ctx.paidEvidenceId = paidSourceId;
-      ctx.sourceCount = 3;
-      scores = candidates.map((c, i) =>
-        scoreCandidate(
-          c,
-          (onchainRanks[i] / maxRank) * 100,
-          ctx,
-          paidProtocols.has(c.protocol),
-        ),
-      );
-      scores = normalizePeerScores(scores);
-    } else {
-      log(onLog, `Payment denied: ${payResult.error}`, "warn");
-    }
-  }
-
+async function finalizeResearch(
+  session: ResearchSession,
+  runtime: ResearchRuntime,
+  candidates: ResearchSession["candidates"],
+  scores: CandidateScore[],
+): Promise<ResearchSession> {
   const scoreBreakdown = buildScoreBreakdown(scores);
   const winner = scoreBreakdown.candidates[0];
 
-  log(onLog, "Generating recommendation narrative via OpenRouter…");
+  emit(runtime, "Generating recommendation narrative via OpenRouter…", "info");
   const narration = await narrateRecommendation({
-    userRequest: opts.request,
+    userRequest: session.request,
     scoreBreakdown,
     winnerProtocol: winner?.protocol ?? "",
     opportunityScore: winner?.composite ?? 0,
     riskScore: winner?.riskScore ?? 0,
   });
 
-  if (narration.source === "openrouter") {
-    log(onLog, "OpenRouter narrative complete.", "success");
-  } else {
-    log(onLog, "Using template narrative (set OPENROUTER_API_KEY for LLM).", "warn");
-  }
+  emit(runtime, "OpenRouter narrative complete.", "success");
 
   const recommendation = toRecommendation(
     narration,
@@ -232,21 +266,24 @@ export async function runResearch(opts: RunResearchOptions): Promise<ResearchSes
     winner?.riskScore ?? 0,
   );
 
-  log(onLog, "Final recommendation generated.", "success");
-
-  const ensWrite = await ens.writeResearchStatus("complete", `report-${researchId}`);
-  if (ensWrite.success) {
-    log(onLog, `ENS record updated: research.status=complete (${ensWrite.txHash})`, "success");
-  }
+  emit(runtime, "Final recommendation generated.", "success", "recommendation.generated", {
+    winner: winner?.protocol,
+    score: winner?.composite,
+    confidence: scoreBreakdown.confidence,
+  });
 
   session.candidates = candidates;
   session.scoreBreakdown = scoreBreakdown;
   session.recommendation = recommendation;
   session.confidence = scoreBreakdown.confidence;
-  session.budget = budget;
   session.status = "completed";
-  session.updatedAt = new Date().toISOString();
-
+  session.paymentPending = undefined;
+  emit(runtime, "Research complete.", "success", "research.completed", {
+    winner: winner?.protocol,
+    score: winner?.composite,
+    confidence: scoreBreakdown.confidence,
+  });
+  touchSession(session, runtime);
   return session;
 }
 

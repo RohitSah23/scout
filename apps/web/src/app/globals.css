@@ -1,16 +1,62 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --bg: #0a0f1a;
-  --card: #111827;
-  --accent: #22d3ee;
-  --muted: #94a3b8;
+  --ink: #0a0a0a;
+  --paper: #f5f0e8;
+  --paper-muted: #ebe4d8;
+  --paper-dark: #1a1a1a;
+  --signal: #e85d04;
+  --success: #1a6b3c;
+  --warning: #b45309;
+  --error: #991b1b;
+  --border-width: 2px;
+  --shadow-offset: 4px 4px 0 var(--ink);
+  --radius: 4px;
 }
 
-body {
-  background: var(--bg);
-  color: #f1f5f9;
-  font-family: system-ui, -apple-system, sans-serif;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-paper text-ink antialiased;
+    font-feature-settings: "kern" 1, "liga" 1;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .shadow-brutal {
+    box-shadow: var(--shadow-offset);
+  }
+
+  .shadow-brutal-hover:hover {
+    box-shadow: 6px 6px 0 var(--ink);
+    transform: translate(-2px, -2px);
+  }
+
+  .border-brutal {
+    border: var(--border-width) solid var(--ink);
+  }
+
+  .text-display {
+    @apply font-display font-bold tracking-tight uppercase leading-none;
+  }
 }

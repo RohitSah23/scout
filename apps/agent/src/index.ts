@@ -1,5 +1,9 @@
 #!/usr/bin/env node
-import "dotenv/config";
+import { config } from "dotenv";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+config({ path: resolve(dirname(fileURLToPath(import.meta.url)), "../../../.env") });
 import { runResearch } from "@scout/agent-runtime";
 
 const request =
@@ -11,11 +15,10 @@ console.log("Request:", request);
 
 const session = await runResearch({
   request,
-  budget: 0.5,
   chain: "base",
-  projectName: "ethonline",
   graphApiKey: process.env.GRAPH_GATEWAY_API_KEY,
   openseoApiKey: process.env.OPENSEO_API_KEY,
+  openseoProjectId: process.env.OPENSEO_PROJECT_ID,
   onLog: (e) => console.log(`[${e.level}] ${e.message}`),
 });
 

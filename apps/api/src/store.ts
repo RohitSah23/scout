@@ -33,6 +33,17 @@ export function getSession(researchId: string): ResearchSession | null {
   return store[researchId] ?? null;
 }
 
+export function listSessions(filter?: { status?: ResearchSession["status"] }): ResearchSession[] {
+  const store = loadStore();
+  let sessions = Object.values(store);
+  if (filter?.status) {
+    sessions = sessions.filter((s) => s.status === filter.status);
+  }
+  return sessions.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+}
+
 const liveStreams = new Map<string, Set<(entry: DecisionLogEntry) => void>>();
 
 export function subscribeToLogs(

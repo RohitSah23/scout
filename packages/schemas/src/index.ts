@@ -139,19 +139,59 @@ export const RecommendationSchema = z.object({
 
 export type Recommendation = z.infer<typeof RecommendationSchema>;
 
+export const ResearchEventTypeSchema = z.enum([
+  "mission.received",
+  "plan.created",
+  "graph.discovery",
+  "graph.query",
+  "graph.complete",
+  "openseo.started",
+  "openseo.complete",
+  "candidates.updated",
+  "scores.provisional",
+  "uncertainty.detected",
+  "payment.required",
+  "payment.pending",
+  "payment.settled",
+  "deep_analysis.received",
+  "recommendation.generated",
+  "ens.updated",
+  "research.completed",
+  "research.failed",
+]);
+
+export type ResearchEventType = z.infer<typeof ResearchEventTypeSchema>;
+
 export const DecisionLogEntrySchema = z.object({
   timestamp: z.string(),
   message: z.string(),
   level: z.enum(["info", "warn", "success", "payment"]).default("info"),
+  eventType: ResearchEventTypeSchema.optional(),
+  payload: z.record(z.unknown()).optional(),
 });
 
 export type DecisionLogEntry = z.infer<typeof DecisionLogEntrySchema>;
 
+export const PaymentPendingSchema = z.object({
+  amount: z.number(),
+  reason: z.string(),
+  targetProtocols: z.array(z.string()),
+  confidence: z.number(),
+  budgetBefore: z.number(),
+  budgetAfter: z.number(),
+  serviceName: z.string().default("Deep wallet-flow analysis"),
+});
+
+export type PaymentPending = z.infer<typeof PaymentPendingSchema>;
+
 export const ResearchSessionSchema = z.object({
   researchId: z.string(),
-  status: z.enum(["pending", "running", "completed", "failed"]),
+  status: z.enum(["pending", "running", "awaiting_payment", "completed", "failed"]),
   request: z.string(),
+  chain: z.string().optional(),
+  category: z.string().optional(),
   agent: z.object({
+    name: z.string().optional(),
     ensName: z.string().optional(),
     wallet: z.string().optional(),
   }),
@@ -161,6 +201,7 @@ export const ResearchSessionSchema = z.object({
   scoreBreakdown: ScoreBreakdownSchema.optional(),
   recommendation: RecommendationSchema.optional(),
   confidence: z.number().optional(),
+  paymentPending: PaymentPendingSchema.optional(),
   decisionLog: z.array(DecisionLogEntrySchema),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -206,12 +247,17 @@ export interface PaymentResult {
   error?: string;
 }
 
+export const GraphQueryKindSchema = z.enum(["messari", "aave-v3", "compound-v3"]);
+
+export type GraphQueryKind = z.infer<typeof GraphQueryKindSchema>;
+
 export const MessariDeploymentSchema = z.object({
   protocol: z.string(),
   chain: z.string(),
   subgraphId: z.string(),
   deploymentId: z.string(),
   schemaVersion: z.string(),
+  queryKind: GraphQueryKindSchema.default("messari"),
   category: z.literal("lending-cdp"),
 });
 

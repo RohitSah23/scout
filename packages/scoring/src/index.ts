@@ -12,6 +12,7 @@ import {
   computeRiskScore,
   computeFlags,
 } from "./dimensions/confidence.js";
+import { SCORE_CUTOFFS, toScore, formatScorePoints } from "./util.js";
 
 export const DISCLAIMER =
   "Scout's research score based on the configured evidence model.";
@@ -25,7 +26,7 @@ export interface ScoringContext {
 
 function composite(dimensions: { score: number; weight: number }[]): number {
   const total = dimensions.reduce((sum, d) => sum + d.weight * d.score, 0);
-  return Math.round(total);
+  return toScore(total);
 }
 
 export function scoreCandidate(
@@ -59,8 +60,8 @@ export function scoreCandidate(
   const gapSignal = buildGapSignal(candidate.onchainMetrics, candidate.seoMetrics);
   const flags = computeFlags(candidate);
 
-  const bandLow = Math.max(0, opportunityScore - 4);
-  const bandHigh = Math.min(100, opportunityScore + 4);
+  const bandLow = toScore(Math.max(0, opportunityScore - 2));
+  const bandHigh = toScore(Math.min(100, opportunityScore + 2));
 
   return {
     protocol: candidate.protocol,
@@ -121,34 +122,26 @@ export function evaluateUncertaintyGate(
   if (alreadyPaidFor.has(first.protocol) || alreadyPaidFor.has(second.protocol)) {
     return { shouldPay: false, reason: "Deep analysis already purchased", expectedConfidenceGain: 0 };
   }
-  if (gap > 15 && confidence >= 80) {
+  if (gap > SCORE_CUTOFFS.clearWinnerGap && confidence >= SCORE_CUTOFFS.clearWinnerConfidence) {
     return {
       shouldPay: false,
-      reason: `Clear winner (${gap}pt lead, confidence ${confidence})`,
+      reason: `Clear winner (${formatScorePoints(gap)}pt lead, confidence ${formatScorePoints(confidence)})`,
       expectedConfidenceGain: 0,
     };
   }
-  if (gap <= 8 || confidence < 70) {
+  if (gap <= SCORE_CUTOFFS.uncertainGap || confidence < SCORE_CUTOFFS.uncertainConfidence) {
     return {
       shouldPay: true,
-      reason: `Resolve uncertainty between ${first.protocol} and ${second.protocol} (${gap}pt gap, confidence ${confidence})`,
-      expectedConfidenceGain: Math.min(20, 70 - confidence + 8),
+      reason: `Resolve uncertainty between ${first.protocol} and ${second.protocol} (${formatScorePoints(gap)}pt gap, confidence ${formatScorePoints(confidence)})`,
+      expectedConfidenceGain: Math.min(
+        20,
+        SCORE_CUTOFFS.uncertainConfidence - confidence + SCORE_CUTOFFS.uncertainGap,
+      ),
     };
   }
   return { shouldPay: false, reason: "Sufficient confidence", expectedConfidenceGain: 0 };
 }
 
-export function normalizePeerScores(scores: CandidateScore[]): CandidateScore[] {
-  if (scores.length < 2) return scores;
-  const composites = scores.map((s) => s.composite);
-  const min = Math.min(...composites);
-  const max = Math.max(...composites);
-  const range = max - min || 1;
-  return scores.map((s) => ({
-    ...s,
-    composite: Math.round(60 + ((s.composite - min) / range) * 35),
-    opportunityScore: Math.round(60 + ((s.opportunityScore - min) / range) * 35),
-  }));
-}
-
 export { DIMENSION_WEIGHTS };
+export { SCORE_CUTOFFS, toScore, formatScorePoints } from "./util.js";
+export type { CandidateScore, ScoreBreakdown } from "@scout/schemas";

@@ -60,7 +60,7 @@ describe("scoring", () => {
     expect(score.composite).toBeLessThanOrEqual(100);
   });
 
-  it("triggers uncertainty gate when top 2 within 8 points", () => {
+  it("triggers uncertainty gate when top 2 within cutoff gap", () => {
     const sa = scoreCandidate(candidateA, 90, ctx, false);
     const sc = scoreCandidate(candidateC, 85, ctx, false);
     const gate = evaluateUncertaintyGate([sa, sc], 0.5, 0.03, new Set());

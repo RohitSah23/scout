@@ -1,14 +1,24 @@
 import type { Candidate, DataProvider, SeoMetrics, Source } from "@scout/schemas";
-
-const MCP_URL = "https://app.openseo.so/mcp";
-const DEV_INTENT_KEYWORDS = ["sdk", "integrate", "api", "docs", "developer", "build"];
-const RETAIL_KEYWORDS = ["price", "airdrop", "token", "apy"];
+import { buildSeoMetrics, type ResearchKeywordsResult, type SerpResultsPayload } from "./metrics.js";
+import { MCP_URL, OpenSEOMcpClient, OpenSEOMcpError } from "./mcp.js";
 
 export class OpenSEOProvider implements DataProvider {
   name = "OpenSEO";
   capabilities = ["keyword-research", "serp", "competitor", "ai-visibility"];
 
-  constructor(private apiKey?: string) {}
+  constructor(
+    private apiKey?: string,
+    private projectId?: string,
+  ) {}
+
+  private client(): OpenSEOMcpClient {
+    if (!this.apiKey) {
+      throw new OpenSEOMcpError(
+        "OPENSEO_API_KEY is required. Get one at app.openseo.so → Settings → API keys.",
+      );
+    }
+    return new OpenSEOMcpClient({ apiKey: this.apiKey, projectId: this.projectId });
+  }
 
   async execute(input: unknown): Promise<unknown> {
     const { action, protocol } = input as { action: string; protocol: string };
@@ -19,83 +29,63 @@ export class OpenSEOProvider implements DataProvider {
   }
 
   async researchProtocol(protocol: string): Promise<SeoMetrics> {
-    if (this.apiKey) {
-      try {
-        const res = await fetch(MCP_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${this.apiKey}`,
-          },
-          body: JSON.stringify({
-            jsonrpc: "2.0",
-            method: "tools/call",
-            params: {
-              name: "keyword_research",
-              arguments: { seed: `${protocol} lending defi` },
-            },
-            id: 1,
-          }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          return this.parseKeywordResponse(data, protocol);
-        }
-      } catch {
-        // fall through to mock
-      }
-    }
-    return this.mockSeoMetrics(protocol);
+    const client = this.client();
+    const projectId = await client.getProjectId();
+    const seed = `${protocol} lending defi`;
+
+    const research = await client.callTool<ResearchKeywordsResult>("research_keywords", {
+      projectId,
+      seeds: [{ seed }],
+      resultLimit: 150,
+    });
+
+    const serp = await client.callTool<SerpResultsPayload>("get_serp_results", {
+      projectId,
+      queries: [{ keyword: `${protocol} lending` }],
+      depth: 10,
+    });
+
+    return buildSeoMetrics(protocol, research, serp);
   }
 
-  parseKeywordResponse(data: unknown, protocol: string): SeoMetrics {
-    const base = this.mockSeoMetrics(protocol);
-    return { ...base, developerIntentScore: this.scoreDeveloperIntent(protocol) };
-  }
-
-  scoreDeveloperIntent(protocol: string): number {
-    const lower = protocol.toLowerCase();
-    let score = 40;
-    for (const kw of DEV_INTENT_KEYWORDS) {
-      if (lower.includes(kw)) score += 10;
-    }
-    for (const kw of RETAIL_KEYWORDS) {
-      if (lower.includes(kw)) score -= 5;
-    }
-    return Math.min(100, Math.max(0, score + 30));
-  }
-
-  mockSeoMetrics(protocol: string): SeoMetrics {
-    const seeds: Record<string, SeoMetrics> = {
-      "Aave V3": { searchDemandChangePct: 12, organicVisibility: 75, contentGapScore: 30, competitorSerpDominance: 85, developerIntentScore: 70, aiVisibilityScore: 60 },
-      "Moonwell": { searchDemandChangePct: 18, organicVisibility: 35, contentGapScore: 85, competitorSerpDominance: 40, developerIntentScore: 55, aiVisibilityScore: 25 },
-      "Seamless Protocol": { searchDemandChangePct: 8, organicVisibility: 20, contentGapScore: 92, competitorSerpDominance: 35, developerIntentScore: 65, aiVisibilityScore: 15 },
-      "Compound V3": { searchDemandChangePct: 15, organicVisibility: 80, contentGapScore: 25, competitorSerpDominance: 90, developerIntentScore: 75, aiVisibilityScore: 70 },
-      "Spark Lend": { searchDemandChangePct: 10, organicVisibility: 45, contentGapScore: 70, competitorSerpDominance: 55, developerIntentScore: 60, aiVisibilityScore: 30 },
-    };
-    return seeds[protocol] ?? {
-      searchDemandChangePct: 10,
-      organicVisibility: 50,
-      contentGapScore: 50,
-      competitorSerpDominance: 50,
-      developerIntentScore: 50,
-      aiVisibilityScore: 40,
-    };
-  }
-
-  async enrichCandidates(candidates: Candidate[]): Promise<{ candidates: Candidate[]; sources: Source[] }> {
+  async enrichCandidates(candidates: Candidate[]): Promise<{
+    candidates: Candidate[];
+    sources: Source[];
+  }> {
     const sources: Source[] = [];
     const enriched: Candidate[] = [];
+    const client = this.client();
+    const projectId = await client.getProjectId();
 
     for (const c of candidates) {
-      const seo = await this.researchProtocol(c.protocol);
-      const sourceId = `openseo-${c.protocol.toLowerCase().replace(/\s+/g, "-")}`;
+      const seed = `${c.protocol} lending defi`;
+      const research = await client.callTool<ResearchKeywordsResult>("research_keywords", {
+        projectId,
+        seeds: [{ seed }],
+        resultLimit: 150,
+      });
+      const serp = await client.callTool<SerpResultsPayload>("get_serp_results", {
+        projectId,
+        queries: [{ keyword: `${c.protocol} lending` }],
+        depth: 10,
+      });
+
+      const seo = buildSeoMetrics(c.protocol, research, serp);
+      const sourceId = `openseo-${c.protocol.toLowerCase().replace(/\s+/g, "-")}-${c.chain}`;
+
       sources.push({
         id: sourceId,
         name: "OpenSEO",
         type: "web",
         cost: 0,
-        data: seo as Record<string, unknown>,
+        data: {
+          live: true,
+          protocol: c.protocol,
+          seed,
+          research,
+          serp,
+          metrics: seo,
+        },
       });
       enriched.push({ ...c, seoMetrics: seo });
     }
@@ -104,4 +94,4 @@ export class OpenSEOProvider implements DataProvider {
   }
 }
 
-export { MCP_URL };
+export { MCP_URL, OpenSEOMcpError };

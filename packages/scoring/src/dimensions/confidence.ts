@@ -1,4 +1,5 @@
 import type { Candidate, DimensionScore } from "@scout/schemas";
+import { toScore } from "../util.js";
 import { DIMENSION_WEIGHTS } from "./onchain.js";
 
 export function scoreEvidenceConfidence(
@@ -24,7 +25,7 @@ export function scoreEvidenceConfidence(
   return {
     key: "evidenceConfidence",
     weight: DIMENSION_WEIGHTS.evidenceConfidence,
-    score: Math.min(100, Math.max(0, Math.round(score))),
+    score: toScore(score),
     rationale: `${sourceCount} sources, ${hasPaidAnalysis ? "paid deep analysis included" : "free evidence only"}`,
     evidenceIds,
   };
@@ -58,7 +59,7 @@ export function computeRiskScore(candidate: Candidate): number {
   ) {
     risk += 25;
   }
-  return Math.min(100, risk);
+  return toScore(risk);
 }
 
 export function computeFlags(candidate: Candidate): string[] {

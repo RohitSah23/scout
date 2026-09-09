@@ -1,121 +1,80 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import type { DecisionLogEntry, ResearchSession } from "@scout/schemas";
-import { ScoreReport } from "@/components/ScoreReport";
-import { DecisionLog } from "@/components/DecisionLog";
-import { AgentHeader } from "@/components/AgentHeader";
-import { PrivyPanel } from "@/components/PrivyPanel";
+import { useState } from "react";
+import { ScoutShell } from "@/components/shell/ScoutShell";
+import { ResearchComposer } from "@/components/research/ResearchComposer";
+import { MissionCard } from "@/components/research/MissionCard";
+import { Section } from "@/components/ui/Section";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+const MISSIONS = [
+  {
+    tag: "Find a Build Opportunity",
+    prompt: "Which lending protocol on Base has the biggest developer opportunity?",
+  },
+  {
+    tag: "Find Market Gaps",
+    prompt: "Find protocols with strong on-chain growth but weak web visibility.",
+  },
+  {
+    tag: "Compare",
+    prompt: "Compare the top lending protocols on Base by growth, users and competition.",
+  },
+  {
+    tag: "Risk",
+    prompt: "Which protocol shows the strongest growth quality right now?",
+  },
+];
 
-export default function Home() {
-  const [prompt, setPrompt] = useState(
-    "Analyze the top lending protocols on Base. Tell me which one has the best opportunity for a new developer product.",
-  );
-  const [budget, setBudget] = useState(0.5);
-  const [loading, setLoading] = useState(false);
-  const [session, setSession] = useState<ResearchSession | null>(null);
-  const [logs, setLogs] = useState<DecisionLogEntry[]>([]);
-  const eventSourceRef = useRef<EventSource | null>(null);
-
-  useEffect(() => {
-    return () => eventSourceRef.current?.close();
-  }, []);
-
-  async function startResearch() {
-    setLoading(true);
-    setSession(null);
-    setLogs([]);
-
-    const res = await fetch(`${API_URL}/research`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ request: prompt, budget, chain: "base", projectName: "ethonline" }),
-    });
-    const { researchId } = await res.json();
-
-    eventSourceRef.current?.close();
-    const es = new EventSource(`${API_URL}/research/${researchId}/stream`);
-    eventSourceRef.current = es;
-
-    es.onmessage = (ev) => {
-      const entry = JSON.parse(ev.data) as DecisionLogEntry;
-      setLogs((prev) => [...prev, entry]);
-    };
-
-    es.addEventListener("done", async () => {
-      const final = await fetch(`${API_URL}/research/${researchId}`);
-      const data = await final.json() as ResearchSession;
-      setSession(data);
-      setLoading(false);
-      es.close();
-    });
-
-    const poll = setInterval(async () => {
-      const r = await fetch(`${API_URL}/research/${researchId}`);
-      const data = await r.json() as ResearchSession;
-      if (data.status === "completed") {
-        setSession(data);
-        setLogs(data.decisionLog);
-        setLoading(false);
-        clearInterval(poll);
-        es.close();
-      }
-    }, 1500);
-  }
+export default function HomePage() {
+  const [selectedPrompt, setSelectedPrompt] = useState("");
 
   return (
-    <main className="min-h-screen p-6 max-w-6xl mx-auto">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-cyan-400">Scout</h1>
-        <p className="text-slate-400 mt-1">Autonomous Protocol Intelligence Agent — ETHOnline 2026</p>
-      </header>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <AgentHeader session={session} ensName={session?.agent.ensName ?? "scout.ethonline.eth"} />
-
-          <div className="bg-scout-card rounded-xl p-4 border border-slate-700">
-            <label className="block text-sm text-slate-400 mb-2">Research prompt</label>
-            <textarea
-              className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-sm min-h-[100px]"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-            />
-            <div className="flex items-center gap-4 mt-3">
-              <label className="text-sm text-slate-400">
-                Budget: ${budget.toFixed(2)} USDC
-                <input
-                  type="range"
-                  min={0.1}
-                  max={1}
-                  step={0.05}
-                  value={budget}
-                  onChange={(e) => setBudget(parseFloat(e.target.value))}
-                  className="ml-2 w-32"
-                />
-              </label>
-              <button
-                onClick={startResearch}
-                disabled={loading}
-                className="px-4 py-2 bg-cyan-500 text-slate-900 font-semibold rounded-lg disabled:opacity-50"
-              >
-                {loading ? "Scout is researching…" : "Start Research"}
-              </button>
+    <ScoutShell>
+      <Section variant="editorial">
+        <div className="max-w-scout mx-auto px-4 md:px-8">
+          <div className="max-w-3xl">
+            <h1 className="text-display text-5xl md:text-7xl lg:text-8xl space-y-1">
+              <span className="block">What</span>
+              <span className="block">Should</span>
+              <span className="block">Scout</span>
+              <span className="block text-signal">Find?</span>
+            </h1>
+            <p className="mt-8 text-lg text-ink/70">Ask a research question.</p>
+            <div className="mt-8">
+              <ResearchComposer initialPrompt={selectedPrompt} />
             </div>
           </div>
-
-          <DecisionLog entries={logs} loading={loading} />
-          {session?.scoreBreakdown && session.recommendation && (
-            <ScoreReport session={session} />
-          )}
         </div>
+      </Section>
 
-        <div className="space-y-4">
-          <PrivyPanel budget={budget} session={session} />
+      <Section variant="data">
+        <div className="max-w-scout mx-auto px-4 md:px-8">
+          <div className="grid sm:grid-cols-2 gap-4">
+            {MISSIONS.map((m) => (
+              <MissionCard
+                key={m.tag}
+                tag={m.tag}
+                prompt={m.prompt}
+                onSelect={() => setSelectedPrompt(m.prompt)}
+              />
+            ))}
+          </div>
         </div>
-      </div>
-    </main>
+      </Section>
+
+      <Section variant="editorial">
+        <div className="max-w-scout mx-auto px-4 md:px-8 text-center space-y-6">
+          <div className="flex flex-wrap justify-center gap-6 md:gap-12 font-display text-xl md:text-2xl uppercase tracking-wide">
+            {["Discover", "Compare", "Verify", "Decide"].map((word) => (
+              <span key={word}>{word}</span>
+            ))}
+          </div>
+          <p className="max-w-xl mx-auto text-ink/70">
+            Scout combines live on-chain activity, web intelligence and paid evidence
+            to turn uncertain Web3 questions into defensible decisions.
+          </p>
+        </div>
+      </Section>
+    </ScoutShell>
   );
 }

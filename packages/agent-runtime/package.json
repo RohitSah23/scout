@@ -20,10 +20,6 @@
     "@scout/scoring": "*",
     "@scout/graph": "*",
     "@scout/openseo": "*",
-    "@scout/x402": "*",
-    "@scout/privy": "*",
-    "@scout/ens": "*",
-    "@scout/deep-analysis": "*",
     "@scout/llm": "*"
   },
   "devDependencies": {

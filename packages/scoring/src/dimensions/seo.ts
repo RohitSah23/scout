@@ -1,4 +1,5 @@
 import type { DimensionScore, OnchainMetrics, SeoMetrics } from "@scout/schemas";
+import { toScore } from "../util.js";
 import { DIMENSION_WEIGHTS } from "./onchain.js";
 
 export function scoreSearchDemand(
@@ -7,12 +8,12 @@ export function scoreSearchDemand(
 ): DimensionScore {
   const demand = metrics?.searchDemandChangePct ?? 0;
   const devIntent = metrics?.developerIntentScore ?? 50;
-  const score = Math.round(demand * 0.6 + devIntent * 0.4);
+  const score = toScore(demand * 0.6 + devIntent * 0.4);
   return {
     key: "searchDemand",
     weight: DIMENSION_WEIGHTS.searchDemand,
-    score: Math.min(100, Math.max(0, score)),
-    rationale: `Search demand ${demand >= 0 ? "+" : ""}${demand.toFixed(0)}%, developer-intent ${devIntent.toFixed(0)}/100`,
+    score,
+    rationale: `Search demand ${demand >= 0 ? "+" : ""}${demand.toFixed(1)}%, developer-intent ${devIntent.toFixed(1)}/100`,
     evidenceIds,
   };
 }
@@ -25,13 +26,13 @@ export function scoreCompetitiveGap(
 ): DimensionScore {
   const serpDom = seo?.competitorSerpDominance ?? 50;
   const gap = onchainRankScore - serpDom;
-  const score = Math.min(100, Math.max(0, 50 + gap));
+  const score = toScore(50 + gap);
   const onchainUp = (onchain?.tvlChangePct ?? 0) > 20;
   const searchFlat = (seo?.searchDemandChangePct ?? 0) < 15;
   const rationale =
     onchainUp && searchFlat
       ? "Strong on-chain adoption with weak competitor SEO moat"
-      : `On-chain rank ${onchainRankScore.toFixed(0)} vs SERP dominance ${serpDom.toFixed(0)}`;
+      : `On-chain rank ${onchainRankScore.toFixed(1)} vs SERP dominance ${serpDom.toFixed(1)}`;
   return {
     key: "competitiveGap",
     weight: DIMENSION_WEIGHTS.competitiveGap,
@@ -49,12 +50,12 @@ export function scoreSeoOpportunity(
   const visibility = metrics?.organicVisibility ?? 50;
   const gap = metrics?.contentGapScore ?? 50;
   const onchainHot = (onchain?.tvlChangePct ?? 0) > 15;
-  let score = Math.round((100 - visibility) * 0.4 + gap * 0.4 + (onchainHot ? 20 : 0));
+  const score = toScore((100 - visibility) * 0.4 + gap * 0.4 + (onchainHot ? 20 : 0));
   return {
     key: "seoOpportunity",
     weight: DIMENSION_WEIGHTS.seoOpportunity,
-    score: Math.min(100, score),
-    rationale: `Organic visibility ${visibility.toFixed(0)}/100, content gap ${gap.toFixed(0)}/100`,
+    score,
+    rationale: `Organic visibility ${visibility.toFixed(1)}/100, content gap ${gap.toFixed(1)}/100`,
     evidenceIds,
   };
 }
@@ -70,7 +71,7 @@ export function buildGapSignal(
     3;
   const search = seo?.searchDemandChangePct ?? 0;
   if (onchainAvg > 20 && search < 15) {
-    return `on-chain +${onchainAvg.toFixed(0)}% but search +${search.toFixed(0)}%`;
+    return `on-chain +${onchainAvg.toFixed(1)}% but search +${search.toFixed(1)}%`;
   }
   return undefined;
 }

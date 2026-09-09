@@ -60,7 +60,7 @@ Crypto protocols live in two separate worlds:
 ```text
 scout/
 ├── apps/
-│   ├── web/               # Next.js 15 App Router Frontend (Chat UI, Radar Chart, Privy Wallet, SSE Stream)
+│   ├── web/               # Next.js 15 App Router Frontend (Research, Reports, Agent, SSE Timeline, Payment UX)
 │   ├── api/               # Hono REST & SSE Server (Research session runners, x402 endpoints, Bazantic recipes)
 │   └── agent/             # Standalone CLI agent runner for headless research workflows
 ├── packages/
@@ -106,48 +106,9 @@ Copy the sample environment file to `.env` in the root:
 cp .env.example .env
 ```
 
-Open `.env` and configure your API keys:
+Open `.env` and configure your API keys. See **[docs/API_KEYS.md](docs/API_KEYS.md)** for where to obtain each credential (OpenRouter, The Graph, OpenSEO, Privy, x402/CDP, ENS Sepolia, Bazantic).
 
-```env
-# --- LLM (OpenRouter or OpenAI-compatible) ---
-OPENROUTER_API_KEY=your_openrouter_api_key
-OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
-OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
-OPENROUTER_SITE_URL=https://scout.local
-OPENROUTER_SITE_NAME=Scout
-
-# --- The Graph ---
-GRAPH_GATEWAY_API_KEY=your_graph_gateway_api_key
-
-# --- OpenSEO ---
-OPENSEO_API_KEY=your_openseo_api_key
-
-# --- x402 & Blockchain ---
-X402_PAY_TO_ADDRESS=0x...
-X402_FACILITATOR_API_KEY_ID=
-X402_FACILITATOR_API_KEY_SECRET=
-X402_PRIVATE_KEY=your_wallet_private_key
-BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
-
-# --- Privy ---
-NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
-PRIVY_APP_SECRET=your_privy_app_secret
-
-# --- ENSv2 Sepolia ---
-ENS_SEPOLIA_RPC_URL=https://rpc.sepolia.org
-ENS_DEPLOYER_PRIVATE_KEY=
-ENS_AGENT_PRIVATE_KEY=
-ENS_PARENT_NAME=scout.eth
-
-# --- Bazantic ---
-BAZANTIC_API_KEY=your_bazantic_api_key
-
-# --- API Server ---
-API_PORT=3001
-NEXT_PUBLIC_API_URL=http://localhost:3001
-```
-
-*(Note: The runtime includes realistic fallback mocks for all integrations so you can run and test the complete pipeline even without live external API keys.)*
+*(Note: Research requires live `GRAPH_GATEWAY_API_KEY`, `OPENSEO_API_KEY`, and `OPENROUTER_API_KEY`. x402 and ENS remain optional/simulated until configured.)*
 
 ---
 
@@ -217,6 +178,7 @@ If the top two protocols have an Opportunity Score difference of `< 10 points` a
 
 ## 📚 Documentation Directory
 
+- [docs/API_KEYS.md](docs/API_KEYS.md) — Where to obtain every credential in `.env.example`.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — System architecture, data flow diagrams, and adapter design patterns.
 - [docs/DEMO.md](docs/DEMO.md) — 3:30 Hackathon video script, sample prompts, and captured proof artifacts.
 - [docs/PARTNERS.md](docs/PARTNERS.md) — Detailed integration technicalities for each partner prize.

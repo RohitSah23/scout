@@ -2,41 +2,28 @@
   {
     "protocol": "Aave V3",
     "chain": "base",
-    "subgraphId": "GQFbbysmNSjvKxD1i1pE9FXGryth5f1ixKvovMo4s8h",
-    "deploymentId": "QmY1ZitBZJ3yqudJbo7Zx9xCsXwzdAgBwtF6jZbGJqHbt",
-    "schemaVersion": "3.1.0",
+    "subgraphId": "GQFbb95cE6d8mV989mL5figjaGaKCQB3xqYrr1bRyXqF",
+    "deploymentId": "QmXZ53Kzz3L2LvvbGve2ebtLKWMhjjB1a3U2jnUj2YwGCW",
+    "schemaVersion": "0.0.5",
+    "queryKind": "aave-v3",
     "category": "lending-cdp"
   },
   {
-    "protocol": "Moonwell",
+    "protocol": "Compound V3",
     "chain": "base",
-    "subgraphId": "ELUcwgpm14LKPLrHPu94vANXJ7N6Z3gEiC",
-    "deploymentId": "QmZ6c8k1z8n8n8n8n8n8n8n8n8n8n8n8n8n8n8n8n8n8",
-    "schemaVersion": "3.1.0",
-    "category": "lending-cdp"
-  },
-  {
-    "protocol": "Seamless Protocol",
-    "chain": "base",
-    "subgraphId": "4sukbNVTqG1zRvV3F8oQvKqVqVqVqVqVqVqVqVqVqVq",
-    "deploymentId": "QmSeamlessBaseDeployment123456789",
-    "schemaVersion": "3.1.0",
+    "subgraphId": "2hcXhs36pTBDVUmk5K2Zkr6N4UYGwaHuco2a6jyTsijo",
+    "deploymentId": "QmT7JTVaR2mQplaceholder",
+    "schemaVersion": "1.0.3",
+    "queryKind": "compound-v3",
     "category": "lending-cdp"
   },
   {
     "protocol": "Compound V3",
     "chain": "ethereum",
-    "subgraphId": "AwoxEZbiWLvv6HNnQ2H9R8F9R8F9R8F9R8F9R8F9R8",
-    "deploymentId": "QmCompoundV3Deployment123456789",
-    "schemaVersion": "3.1.0",
-    "category": "lending-cdp"
-  },
-  {
-    "protocol": "Spark Lend",
-    "chain": "ethereum",
-    "subgraphId": "SparkLendSubgraphIdPlaceholder",
-    "deploymentId": "QmSparkLendDeployment123456789",
-    "schemaVersion": "3.1.0",
+    "subgraphId": "5nwMCSHaTqG3Kd2gHznbTXEnZ9QNWsssQfbHhDqQSQFp",
+    "deploymentId": "QmCompoundMainnetPlaceholder",
+    "schemaVersion": "1.0.3",
+    "queryKind": "compound-v3",
     "category": "lending-cdp"
   }
 ]
