@@ -10,11 +10,15 @@ import { GraphProvider } from "@scout/graph";
 import { OpenSEOProvider } from "@scout/openseo";
 import {
   buildScoreBreakdown,
+  evaluateUncertaintyGate,
   scoreCandidate,
   type CandidateScore,
   type ScoringContext,
 } from "@scout/scoring";
 import { narrateRecommendation, toRecommendation } from "@scout/llm";
+import { DEEP_ANALYSIS_PRICE_USD, runDeepAnalysis } from "@scout/deep-analysis";
+import { createENSIdentity } from "@scout/ens";
+import { createDefaultPolicy, PrivyWalletProvider } from "@scout/privy";
 
 export type LogCallback = (entry: DecisionLogEntry) => void;
 export type SessionUpdateCallback = (session: ResearchSession) => void;
@@ -28,6 +32,7 @@ export interface RunResearchOptions {
   graphApiKey?: string;
   openseoApiKey?: string;
   openseoProjectId?: string;
+  payToAddresses?: string[];
   onLog?: LogCallback;
   onSessionUpdate?: SessionUpdateCallback;
 }
@@ -208,6 +213,53 @@ export async function runResearch(opts: RunResearchOptions): Promise<ResearchSes
     });
     touchSession(session, runtime);
 
+    // Uncertainty Gate Evaluation
+    const gate = evaluateUncertaintyGate(
+      scores,
+      session.budget.remaining,
+      DEEP_ANALYSIS_PRICE_USD,
+      new Set(),
+    );
+
+    if (gate.shouldPay) {
+      const top2 = provisional.candidates.slice(0, 2);
+      emit(
+        runtime,
+        `Uncertainty detected: ${gate.reason}. High-conviction decision requires deep wallet-flow analysis.`,
+        "warn",
+        "uncertainty.detected",
+        {
+          gap: top2.length >= 2 ? Math.round((top2[0].composite - top2[1].composite) * 10) / 10 : 0,
+          confidence: provisional.confidence,
+          candidates: top2.map((t) => t.protocol),
+        },
+      );
+
+      session.status = "awaiting_payment";
+      session.paymentPending = {
+        amount: DEEP_ANALYSIS_PRICE_USD,
+        reason: gate.reason,
+        targetProtocols: [top2[0].protocol, top2[1]?.protocol ?? top2[0].protocol],
+        confidence: provisional.confidence,
+        budgetBefore: session.budget.remaining,
+        budgetAfter: Math.round((session.budget.remaining - DEEP_ANALYSIS_PRICE_USD) * 100) / 100,
+        serviceName: "Deep wallet-flow analysis",
+      };
+
+      emit(
+        runtime,
+        `Payment authorization required: $${DEEP_ANALYSIS_PRICE_USD.toFixed(2)} USDC for deep analysis report on ${top2[0].protocol}.`,
+        "payment",
+        "payment.required",
+        {
+          paymentPending: session.paymentPending,
+        },
+      );
+
+      touchSession(session, runtime);
+      return session;
+    }
+
     return await finalizeResearch(session, runtime, candidates, scores);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Research failed";
@@ -218,25 +270,135 @@ export async function runResearch(opts: RunResearchOptions): Promise<ResearchSes
   }
 }
 
-/** @deprecated Payment flow disabled — completes with existing evidence. */
 export async function runResearchPhase1(opts: RunResearchOptions): Promise<ResearchSession> {
   return runResearch(opts);
 }
 
-/** @deprecated Payment flow disabled. */
 export async function authorizePaymentAndComplete(
   session: ResearchSession,
-  opts: Pick<RunResearchOptions, "onLog" | "onSessionUpdate">,
+  opts: Pick<RunResearchOptions, "onLog" | "onSessionUpdate" | "payToAddresses">,
 ): Promise<ResearchSession> {
-  return denyPaymentAndComplete(session, opts);
+  const runtime = createRuntime(opts, [...session.decisionLog]);
+  emit(
+    runtime,
+    `Authorizing payment of $${DEEP_ANALYSIS_PRICE_USD.toFixed(2)} USDC via Privy policy…`,
+    "payment",
+    "payment.pending",
+  );
+
+  const policy = createDefaultPolicy(
+    opts.payToAddresses ?? [process.env.X402_PAY_TO_ADDRESS ?? "0xscoutdeepanalysis"],
+    session.budget.initial,
+  );
+  const wallet = new PrivyWalletProvider(policy);
+
+  const payResult = await wallet.signPayment({
+    amount: DEEP_ANALYSIS_PRICE_USD,
+    recipient: (opts.payToAddresses ?? [process.env.X402_PAY_TO_ADDRESS ?? "0xscoutdeepanalysis"])[0],
+    reason: session.paymentPending?.reason ?? "Uncertainty gate resolution",
+  });
+
+  if (!payResult.success) {
+    emit(runtime, `Payment denied by policy: ${payResult.error}`, "warn");
+    throw new Error(payResult.error ?? "Payment failed");
+  }
+
+  emit(
+    runtime,
+    `Payment settled via Privy policy (${payResult.txRef}).`,
+    "success",
+    "payment.settled",
+    {
+      amount: DEEP_ANALYSIS_PRICE_USD,
+      txRef: payResult.txRef,
+    },
+  );
+
+  session.budget.spent = Math.round((session.budget.spent + DEEP_ANALYSIS_PRICE_USD) * 100) / 100;
+  session.budget.remaining = Math.round((session.budget.initial - session.budget.spent) * 100) / 100;
+
+  const targetProtocol =
+    session.paymentPending?.targetProtocols[0] ?? session.candidates[0]?.protocol;
+  const targetCandidate = session.candidates.find((c) => c.protocol === targetProtocol);
+  const deep = runDeepAnalysis(targetProtocol, targetCandidate);
+
+  const paidSourceId = `deep-${targetProtocol.toLowerCase().replace(/\s+/g, "-")}`;
+  session.sources.push({
+    id: paidSourceId,
+    name: "Deep Protocol Analysis",
+    type: "paid",
+    cost: DEEP_ANALYSIS_PRICE_USD,
+    payment: "x402",
+    txRef: payResult.txRef,
+    data: deep as unknown as Record<string, unknown>,
+  });
+
+  session.candidates = session.candidates.map((c) =>
+    c.protocol === targetProtocol
+      ? {
+          ...c,
+          deepAnalysis: {
+            walletGrowth: deep.wallet_growth,
+            retention: deep.retention,
+            whaleActivity: deep.whale_activity,
+            growthQuality: deep.growth_quality,
+            riskFactors: deep.risk_factors,
+            confidenceBoost: deep.confidence_boost,
+          },
+        }
+      : c,
+  );
+
+  emit(
+    runtime,
+    `Deep analysis received for ${targetProtocol}: whale activity ${deep.whale_activity}%, retention ${deep.retention}%.`,
+    "info",
+    "deep_analysis.received",
+    {
+      protocol: targetProtocol,
+      growthQuality: deep.growth_quality,
+      confidenceBoost: deep.confidence_boost,
+      whaleActivity: deep.whale_activity,
+      retention: deep.retention,
+    },
+  );
+
+  const graphEvidenceId = session.sources.find((s) => s.type === "onchain")?.id ?? "graph";
+  const seoEvidenceId = session.sources.find((s) => s.type === "web")?.id ?? "seo";
+  const ctx: ScoringContext = {
+    graphEvidenceId,
+    seoEvidenceId,
+    paidEvidenceId: paidSourceId,
+    sourceCount: 3,
+  };
+
+  const onchainRanks = session.candidates.map((c) => {
+    const m = c.onchainMetrics;
+    return ((m?.tvlChangePct ?? 0) + (m?.activeAddressesChangePct ?? 0)) / 2;
+  });
+  const maxRank = Math.max(...onchainRanks, 1);
+
+  const recomputedScores = session.candidates.map((c, i) =>
+    scoreCandidate(
+      c,
+      (onchainRanks[i] / maxRank) * 100,
+      ctx,
+      c.protocol === targetProtocol,
+    ),
+  );
+
+  session.paymentPending = undefined;
+  session.status = "running";
+  return finalizeResearch(session, runtime, session.candidates, recomputedScores);
 }
 
-/** @deprecated Payment flow disabled. */
 export async function denyPaymentAndComplete(
   session: ResearchSession,
   opts: Pick<RunResearchOptions, "onLog" | "onSessionUpdate">,
 ): Promise<ResearchSession> {
   const runtime = createRuntime(opts, [...session.decisionLog]);
+  emit(runtime, "Paid deep analysis skipped by user. Proceeding with existing evidence.", "info");
+
   const graphEvidenceId = session.sources.find((s) => s.type === "onchain")?.id ?? "graph";
   const seoEvidenceId = session.sources.find((s) => s.type === "web")?.id ?? "seo";
   const ctx: ScoringContext = { graphEvidenceId, seoEvidenceId, sourceCount: 2 };
@@ -286,6 +448,25 @@ async function finalizeResearch(
     score: winner?.composite,
     confidence: scoreBreakdown.confidence,
   });
+
+  // ENSv2 status record write
+  const ens = createENSIdentity(session.chain ?? "base", session.budget.initial);
+  const ensWrite = await ens.writeResearchStatus("complete", `report-${session.researchId}`);
+  if (ensWrite.success) {
+    const resolvedName = await ens.resolveName();
+    session.agent.ensName = resolvedName;
+    emit(
+      runtime,
+      `ENS status record published: ${resolvedName} → research.status=complete (${ensWrite.txHash})`,
+      "success",
+      "ens.updated",
+      {
+        ensName: resolvedName,
+        status: "complete",
+        txHash: ensWrite.txHash,
+      },
+    );
+  }
 
   session.candidates = candidates;
   session.scoreBreakdown = scoreBreakdown;

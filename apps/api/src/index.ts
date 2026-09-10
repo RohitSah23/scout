@@ -14,6 +14,7 @@ import {
 } from "@scout/agent-runtime";
 import { runDeepAnalysis, DEEP_ANALYSIS_PRICE_USD } from "@scout/deep-analysis";
 import { buildRecipeManifest } from "@scout/bazantic";
+import { createENSIdentity } from "@scout/ens";
 import type { DecisionLogEntry, ResearchSession } from "@scout/schemas";
 import { emitLog, getSession, listSessions, saveSession, subscribeToLogs } from "./store.js";
 
@@ -58,6 +59,38 @@ function isTerminalStatus(status: ResearchSession["status"]) {
 app.use("/*", cors({ origin: "*" }));
 
 app.get("/health", (c) => c.json({ ok: true, service: "scout-api" }));
+
+app.get("/agent/identity", async (c) => {
+  const ens = createENSIdentity("base", 0.5);
+  const permissions = await ens.getPermissions();
+  const records = ens.getRecords();
+  return c.json({
+    name: "scout",
+    ensName: await ens.resolveName(),
+    status: "ACTIVE",
+    budgetCap: await ens.getBudgetCap(),
+    permissions,
+    records,
+    capabilities: [
+      "The Graph Messari Lending/CDP standard queries",
+      "OpenSEO keyword and SERP intelligence",
+      "Deterministic 6-dimension scoring",
+      "x402 machine-native micropayments",
+      "ENSv2 identity & delegated permission enforcement",
+    ],
+  });
+});
+
+app.post("/agent/test-eac", async (c) => {
+  const body = await c.req.json<{ action: "authorized" | "unauthorized" }>();
+  const ens = createENSIdentity("base", 0.5);
+  if (body.action === "unauthorized") {
+    const res = await ens.attemptUnauthorizedWrite();
+    return c.json(res, 403);
+  }
+  const res = await ens.writeResearchStatus("idle");
+  return c.json(res);
+});
 
 app.get("/research", (c) => {
   const status = c.req.query("status") as ResearchSession["status"] | undefined;

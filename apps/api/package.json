@@ -12,6 +12,7 @@
     "@scout/agent-runtime": "*",
     "@scout/bazantic": "*",
     "@scout/deep-analysis": "*",
+    "@scout/ens": "*",
     "@scout/schemas": "*",
     "@hono/node-server": "^1.13.7",
     "dotenv": "^16.4.7",

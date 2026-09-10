@@ -20,7 +20,10 @@
     "@scout/scoring": "*",
     "@scout/graph": "*",
     "@scout/openseo": "*",
-    "@scout/llm": "*"
+    "@scout/llm": "*",
+    "@scout/deep-analysis": "*",
+    "@scout/ens": "*",
+    "@scout/privy": "*"
   },
   "devDependencies": {
     "typescript": "^5.7.2"

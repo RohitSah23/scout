@@ -14,7 +14,7 @@ import { SourceBadge } from "@/components/ui/Badge";
 
 type Tab = "report" | "evidence" | "timeline";
 
-const HIDDEN_SOURCE_TYPES = new Set(["paid"]);
+const HIDDEN_SOURCE_TYPES = new Set<string>();
 
 export function ResearchReport({
   session,
@@ -109,15 +109,7 @@ export function ResearchReport({
       )}
 
       {tab === "timeline" && (
-        <DecisionLogView
-          entries={session.decisionLog.filter(
-            (e) =>
-              !e.eventType?.startsWith("payment") &&
-              !e.eventType?.startsWith("ens") &&
-              e.eventType !== "uncertainty.detected" &&
-              e.eventType !== "deep_analysis.received",
-          )}
-        />
+        <DecisionLogView entries={session.decisionLog} />
       )}
 
       {evidenceSource && (
