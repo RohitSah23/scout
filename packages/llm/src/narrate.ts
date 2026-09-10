@@ -16,17 +16,27 @@ export interface NarrationResult {
   source: "openrouter" | "template";
 }
 
+function winnerLabel(winner: NarrationInput["scoreBreakdown"]["candidates"][number] | undefined): string {
+  if (!winner) return "";
+  if (winner.assetSymbol && winner.sourceProtocol) {
+    return `${winner.assetSymbol} on ${winner.sourceProtocol}`;
+  }
+  return winner.protocol;
+}
+
 function templateNarration(input: NarrationInput): NarrationResult {
   const winner = input.scoreBreakdown.candidates[0];
+  const label = winnerLabel(winner) || input.winnerProtocol;
   return {
-    summary: `Best opportunity: ${input.winnerProtocol}`,
+    summary: `Top lending asset: ${label}`,
     why: [
       winner?.gapSignal ? `Gap signal: ${winner.gapSignal}` : "Strongest composite score",
+      winner?.windowLabel ? `Evidence window: ${winner.windowLabel}` : "Cross-protocol asset rank",
       `Momentum: ${winner?.momentum ?? "stable"}`,
       winner?.flags?.length ? `Flags: ${winner.flags.join(", ")}` : "Clean evidence profile",
       `Opportunity ${input.opportunityScore}/100, risk ${input.riskScore}/100`,
     ],
-    action: `Build developer analytics tooling around ${input.winnerProtocol}.`,
+    action: `Build developer analytics or liquidity tooling around ${label}.`,
     source: "template",
   };
 }
@@ -41,14 +51,19 @@ export class NarrationError extends Error {
 export async function narrateRecommendation(input: NarrationInput): Promise<NarrationResult> {
   const winner = input.scoreBreakdown.candidates[0];
 
-  const systemPrompt = `You are Scout, an autonomous Web3 protocol research agent.
-You narrate research results. You do NOT invent scores — use only the provided score breakdown.
+  const label = winnerLabel(winner) || input.winnerProtocol;
+
+  const systemPrompt = `You are Scout, an autonomous Web3 lending asset research agent.
+You narrate cross-protocol token/market rankings. You do NOT invent scores — use only the provided score breakdown.
 Respond with valid JSON only:
 {"summary":"one line","why":["bullet1","bullet2","bullet3"],"action":"one concrete recommendation"}`;
 
   const userPrompt = `User request: ${input.userRequest}
 
-Winner: ${input.winnerProtocol}
+Winning asset: ${label}
+Source protocol: ${winner?.sourceProtocol ?? "unknown"}
+Asset symbol: ${winner?.assetSymbol ?? winner?.protocol}
+Evidence window: ${winner?.windowLabel ?? "mixed"}
 Opportunity score: ${input.opportunityScore}/100 (fixed — do not change)
 Risk score: ${input.riskScore}/100 (fixed — do not change)
 Gap signal: ${winner?.gapSignal ?? "none"}
@@ -56,7 +71,7 @@ Momentum: ${winner?.momentum ?? "stable"}
 Flags: ${winner?.flags?.join(", ") ?? "none"}
 Dimension scores: ${winner?.dimensions.map((d) => `${d.key}=${d.score}`).join(", ")}
 
-Write a concise recommendation for a developer looking to build on the winning protocol.`;
+Write a concise recommendation for a developer looking to build around the winning lending asset.`;
 
   const raw = await chatCompletion([
     { role: "system", content: systemPrompt },

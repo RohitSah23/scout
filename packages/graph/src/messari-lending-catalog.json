@@ -1,0 +1,830 @@
+[
+  {
+    "protocolKey": "abracadabra",
+    "messariSlug": "abracadabra-arbitrum",
+    "chain": "arbitrum",
+    "subgraphId": "3m97d2dJ2pXwPFuiHrm8T37V9TCoAHBpMqRwdguyUZXF",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "abracadabra",
+    "messariSlug": "abracadabra-avalanche",
+    "chain": "avalanche",
+    "subgraphId": "3Gkei7B24o9C2bCoAbQpApZqMStPta7oCAnNhmNv5dab",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "abracadabra",
+    "messariSlug": "abracadabra-bsc",
+    "chain": "bsc",
+    "subgraphId": "6bFCfHn5Uuv5fH7PxKL12dzWh3zz7fkQ46EnMa7nZUj2",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "abracadabra",
+    "messariSlug": "abracadabra-fantom",
+    "chain": "fantom",
+    "subgraphId": "2nxGrxxPShrm49dEWusJjB5dpmonN16JFzLwDrS1pCyq",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "abracadabra",
+    "messariSlug": "abracadabra-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "GLAu42kvVs7ixfXcmkAsRiS7Xt1NCpgkKsnz3qiriuvV",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-arc",
+    "messariSlug": "aave-arc-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "5hyqnEzjZbwFBU1rk4JBknCeiF2Mj93qBzsyQfpAa3QA",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-amm",
+    "messariSlug": "aave-amm-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "41ooPWnDYKwckqyG1mvg7ZEndy5zMemXinx6uQxscrBS",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-rwa",
+    "messariSlug": "aave-rwa-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "C8ynQrjVKcmqxb9fWrLvSCBFNf2ChFkxCg7Q8gknJrza",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-v2",
+    "messariSlug": "aave-v2-avalanche",
+    "chain": "avalanche",
+    "subgraphId": "9nh6Ums63wFcoZpmegyPcAFtY3CAzQc3S6cuERALYMqa",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-v2",
+    "messariSlug": "aave-v2-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "C2zniPn45RnLDGzVeGZCx2Sw3GXrbc9gL4ZfL8B8Em2j",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-v2",
+    "messariSlug": "aave-v2-polygon",
+    "chain": "polygon",
+    "subgraphId": "GrZQJ7sWdTqiNUD8Vh2THaeBM4wGwiF8mFv9FBfyzwxm",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-v3",
+    "messariSlug": "aave-v3-arbitrum",
+    "chain": "arbitrum",
+    "subgraphId": "4xyasjQeREe7PxnF6wVdobZvCw5mhoHZq3T7guRpuNPf",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-v3",
+    "messariSlug": "aave-v3-avalanche",
+    "chain": "avalanche",
+    "subgraphId": "72Cez54APnySAn6h8MswzYkwaL9KjvuuKnKArnPJ8yxb",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-v3",
+    "messariSlug": "aave-v3-fantom",
+    "chain": "fantom",
+    "subgraphId": "ZcLcVKJNQboeqACXhGuL3WFLBZzf5uUWheNsaFvLph6",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-v3",
+    "messariSlug": "aave-v3-harmony",
+    "chain": "harmony",
+    "subgraphId": "G1BNHqmteZiUwSEacfXG2nzMm13KLNo5xoxv62ErAyQv",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-v3",
+    "messariSlug": "aave-v3-polygon",
+    "chain": "polygon",
+    "subgraphId": "6yuf1C49aWEscgk5n9D1DekeG1BCk5Z9imJYJT3sVmAT",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-v3",
+    "messariSlug": "aave-v3-optimism",
+    "chain": "optimism",
+    "subgraphId": "3RWFxWNstn4nP3dXiDfKi9GgBoHx7xzc7APkXs1MLEgi",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-v3",
+    "messariSlug": "aave-v3-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "JCNWRypm7FYwV8fx5HhzZPSFaMxgkPuw4TnR3Gpi81zk",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-v3",
+    "messariSlug": "aave-v3-base",
+    "chain": "base",
+    "subgraphId": "D7mapexM5ZsQckLJai2FawTKXJ7CqYGKM8PErnS3cJi9",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-v3",
+    "messariSlug": "aave-v3-gnosis",
+    "chain": "gnosis",
+    "subgraphId": "GiNMLDxT1Bdn2dQZxjQLmW24uwpc3geKUBW8RP6oEdg",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-v3",
+    "messariSlug": "aave-v3-bsc",
+    "chain": "bsc",
+    "subgraphId": "43jbGkvSw55sMvYyF6MZieksmJbajMu3hNGF8PN9ucuP",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "aave-v3",
+    "messariSlug": "aave-v3-scroll",
+    "chain": "scroll",
+    "subgraphId": "DkvXMxq1skgSe1ehLHWpiUthHU1znnMDK2SUmj9avhEX",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "seamless-protocol",
+    "messariSlug": "seamless-protocol-base",
+    "chain": "base",
+    "subgraphId": "2u4mWUV4xS19ef1MbnxZHWLLMwdPxtVifH46JbonXwXP",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "kinza-finance",
+    "messariSlug": "kinza-finance-bsc",
+    "chain": "bsc",
+    "subgraphId": "435cubRAqNsFYKzyQHRRiHvR7oJjh828r5Aqe4cZC586",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "seismic",
+    "messariSlug": "seismic-blast",
+    "chain": "blast",
+    "subgraphId": "d7gMk1zkEyCQuNVeirBYA6keCZv8hTLheCZ4DBCjRfz",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "pac-finance",
+    "messariSlug": "pac-finance-blast",
+    "chain": "blast",
+    "subgraphId": "ERsfyKMQTpTEN6LtyWvFwhDENLf6aAAggbtrNEnFKLpx",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "zerolend",
+    "messariSlug": "zerolend-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "4Zf4doH54RDit9KVsfCp3MkjrP3szhJZwvw2z5PHczx9",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "zerolend",
+    "messariSlug": "zerolend-blast",
+    "chain": "blast",
+    "subgraphId": "6JP9542ArawumBSYczerbWGu6k7uu3hqk6qJnSkrgTM5",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "zerolend",
+    "messariSlug": "zerolend-zksync-era",
+    "chain": "zksync",
+    "subgraphId": "3CHaJvCkTMqXa4PRKNshVecE9JqgNFCdsXNyGLZXFeM2",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "zerolend",
+    "messariSlug": "zerolend-linea",
+    "chain": "linea",
+    "subgraphId": "DLzwo1WFaKy7R7MgQWrnBXr19EbGwPRubu9YmsSmRMfC",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "zerolend",
+    "messariSlug": "zerolend-xlayer",
+    "chain": "xlayer",
+    "subgraphId": "NRh6ScvPKoieeSH7tRiKyXJ97DR9aYraas8eREPQ8e3",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "alpaca-finance-lending",
+    "messariSlug": "alpaca-finance-lending-bsc",
+    "chain": "bsc",
+    "subgraphId": "ED3ayhcLA7h7DCGwbysgcxtfMEcoeYCdMEsdZJeoaUFS",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "alpaca-finance-lending",
+    "messariSlug": "alpaca-finance-lending-fantom",
+    "chain": "fantom",
+    "subgraphId": "6EfFr7xDpD7LLi1X8Cj9b6ytjFjX3GZYrMrCKomEuCmx",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "banker-joe",
+    "messariSlug": "banker-joe-avalanche",
+    "chain": "avalanche",
+    "subgraphId": "9NjYuG2BFU1BPacNdKymd9eNdfVCaJM6LhsgD8zSQgDK",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "bastion-protocol",
+    "messariSlug": "bastion-protocol-aurora",
+    "chain": "aurora",
+    "subgraphId": "BD4rW7Ga5YQ3x68tALbi8vsXNodd6LrvFeaVocdJt3bD",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.1",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "benqi",
+    "messariSlug": "benqi-avalanche",
+    "chain": "avalanche",
+    "subgraphId": "8ZjJGsaKea7WwLJPJNdHXPGsvXDe3iq2231aRjgBPisi",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "burrow",
+    "messariSlug": "burrow-near",
+    "chain": "near-mainnet",
+    "subgraphId": "5W5fhZAq6QABBijKo7wqYps7TLzqAqS2mU1C1rhktvtg",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "compound-v2",
+    "messariSlug": "compound-v2-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "4TbqVA8p2DoBd5qDbPMwmDZv3CsJjWtxo8nVSqF2tA9a",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "cream-finance",
+    "messariSlug": "cream-finance-arbitrum",
+    "chain": "arbitrum",
+    "subgraphId": "GzHkVNf7BBqUjV8Sy6U6xUaWdGheFMdin1cB6sNvfdzs",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "cream-finance",
+    "messariSlug": "cream-finance-bsc",
+    "chain": "bsc",
+    "subgraphId": "Dd2ak11qC4mS2spUXzJm5v9EtVNJqmBC9rLzbckTwfN1",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "cream-finance",
+    "messariSlug": "cream-finance-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "43NeT7UTACLUkohKBaG7auvkhsj4Kwux9kNTJr6sFdNe",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "cream-finance",
+    "messariSlug": "cream-finance-polygon",
+    "chain": "polygon",
+    "subgraphId": "CBeERkhQNwPwU3jSWdKHeAtPQh4TFucUyUMcqAJk19ij",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "dforce",
+    "messariSlug": "dforce-arbitrum",
+    "chain": "arbitrum",
+    "subgraphId": "Dpk4Gen22wxQ3Laojf7DR2me8wGzjaHwjsKAsLf2rCFV",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "dforce",
+    "messariSlug": "dforce-bsc",
+    "chain": "bsc",
+    "subgraphId": "DKu1HqTTi26uLZKAmvDbqyAvcnFAjXEuRJmF35RLpyFg",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "dforce",
+    "messariSlug": "dforce-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "6PaB6tKFqrL6YoAELEhFGU6Gc39cEynLbo6ETZMF3sCy",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "dforce",
+    "messariSlug": "dforce-optimism",
+    "chain": "optimism",
+    "subgraphId": "6AmkakXwadWiZ2jN7oJcFreWmKG1nZrT5P8om52upYPd",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "dforce",
+    "messariSlug": "dforce-polygon",
+    "chain": "polygon",
+    "subgraphId": "9CFGPWpntYisBp7NpHMrgYzFrBmtVxSw58haGyZ3ewoZ",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "iron-bank",
+    "messariSlug": "iron-bank-avalanche",
+    "chain": "avalanche",
+    "subgraphId": "9YiJM9oHy25estSJjB1Z71Hdz5C814R3vDoS2ezpN27C",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "iron-bank",
+    "messariSlug": "iron-bank-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "5YoxED3bbWV9byvn3x3S3ebZ3idrQmQmsJhL5LMyY26v",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "iron-bank",
+    "messariSlug": "iron-bank-fantom",
+    "chain": "fantom",
+    "subgraphId": "4dWx6UZNcLEzgtipy45VkgtptYRqoHdZeCGNKxHAxKWo",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "iron-bank",
+    "messariSlug": "iron-bank-optimism",
+    "chain": "optimism",
+    "subgraphId": "4WKePP5QfwrW6Hfd8YKWHuivivmdxPubuP45BryeGo4g",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "moonwell",
+    "messariSlug": "moonwell-moonbeam",
+    "chain": "moonbeam",
+    "subgraphId": "DQhrdUHwspQf3hSjDtyfS6uqq9YiKoLF3Ut3U9os2HK",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "moonwell",
+    "messariSlug": "moonwell-moonriver",
+    "chain": "moonriver",
+    "subgraphId": "8ayELti1UNCNCWuvwSwapjh4mvvCejeXsk4PmsWBmQ82",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "moonwell",
+    "messariSlug": "moonwell-base",
+    "chain": "base",
+    "subgraphId": "33ex1ExmYQtwGVwri1AP3oMFPGSce6YbocBP7fWbsBrg",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "rari-fuse",
+    "messariSlug": "rari-fuse-arbitrum",
+    "chain": "arbitrum",
+    "subgraphId": "HnV3fhwsWfmQGdD2AeGzqvRVTDBqnMH74jCsDVq1DXYP",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "rari-fuse",
+    "messariSlug": "rari-fuse-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "kecp6SPMvbB4GTqg9r5PXvztYriexj5F3ZCaATpjmb2",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "scream",
+    "messariSlug": "scream-fantom",
+    "chain": "fantom",
+    "subgraphId": "Cj3pDoqHgLBntkaXAKMxtJTZr3StxYvVEedTXyJGJoK4",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "sonne-finance",
+    "messariSlug": "sonne-finance-optimism",
+    "chain": "optimism",
+    "subgraphId": "DQqb7FiQ1joLhESkAwvAYiuXhwfz4zf6qHmbt7stnec8",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "venus",
+    "messariSlug": "venus-protocol-bsc",
+    "chain": "bsc",
+    "subgraphId": "CwswJ7sfENafqgAYU1upn3hQgoEV2CXXRZRJ7XtgJrKG",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "compound-v3",
+    "messariSlug": "compound-v3-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "AwoxEZbiWLvv6e3QdvdMZw4WDURdGbvPfHmZRc8Dpfz9",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "compound-v3",
+    "messariSlug": "compound-v3-polygon",
+    "chain": "polygon",
+    "subgraphId": "5wfoWBpfYv59b99wDxJmyFiKBu9brXESeqJAzw8WP5Cz",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "compound-v3",
+    "messariSlug": "compound-v3-arbitrum",
+    "chain": "arbitrum",
+    "subgraphId": "5MjRndNWGhqvNX7chUYLQDnvEgc8DaH8eisEkcJt71SR",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "compound-v3",
+    "messariSlug": "compound-v3-base",
+    "chain": "base",
+    "subgraphId": "AwoxEZbiWLvv6e3QdvdMZw4WDURdGbvPfHmZRc8Dpfz9",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "euler-finance",
+    "messariSlug": "euler-finance-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "95nyAWFFaiz6gykko3HtBCyhRuP5vZzuKYsZiLxHxLhr",
+    "schemaVersion": "1.3.0",
+    "methodologyVersion": "1.2.3",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "goldfinch",
+    "messariSlug": "goldfinch-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "GRwpFCPYyQPdz84sCnKemzrNvgFPuKkFLcRLR6jsRxHr",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.1",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "inverse-finance",
+    "messariSlug": "inverse-finance-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "EXuutY6qkZbXjYeJZdiDBf2imJswTNdfm8YZCqhAthfW",
+    "schemaVersion": "1.3.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "liquity",
+    "messariSlug": "liquity-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "2D2dFCLjUt3MfFgTKW8cBxiRQ3Adss7KUtYh2rTcFVY",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.1",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "vesta-finance",
+    "messariSlug": "vesta-finance-arbitrum",
+    "chain": "arbitrum",
+    "subgraphId": "zGuPrsVqtY5ehJDCmweb9ZnBrae3tSQWRux8Mz1M4Gn",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "truefi",
+    "messariSlug": "truefi-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "39F8fYCvLYmutjqpzEwx3dcEJTtFFVupvBzJqkEzftA7",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "makerdao",
+    "messariSlug": "makerdao-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "8sE6rTNkPhzZXZC6c8UQy2ghFTu5PPdGauwUBm4t7HZ1",
+    "schemaVersion": "2.0.1",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "maple-finance-v1",
+    "messariSlug": "maple-finance-v1-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "J9dtvE11PWNZH74frWyx9QZonyC1Db2UWDMUegmT3zkG",
+    "schemaVersion": "1.3.0",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "maple-finance-v2",
+    "messariSlug": "maple-finance-v2-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "94swSaaFChsQoZzb9Vc7Lo6FWFV6YZUMNSdFVTMAeRgj",
+    "schemaVersion": "3.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "morpho-aave-v2",
+    "messariSlug": "morpho-aave-v2-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "DsznTYxGdsqxWB6a474rSksvB7qWSth5Ff1PcxW28vZy",
+    "schemaVersion": "3.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "morpho-aave-v3",
+    "messariSlug": "morpho-aave-v3-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "FKe6ANnWmGPE6hajGLoTgPrVF2jYPHiRu2Jwcg9ZmG9A",
+    "schemaVersion": "3.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "morpho-compound",
+    "messariSlug": "morpho-compound-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "9dTy23tkahyiap1THgwnJuMwxNHVnQM57jFQQiUzjcY6",
+    "schemaVersion": "3.0.1",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "geist-finance",
+    "messariSlug": "geist-finance-fantom",
+    "chain": "fantom",
+    "subgraphId": "45LX32kZPBRNiXaBKDrzbCnidoKv3cMEc8cXt3kvPifz",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "spark-lend",
+    "messariSlug": "spark-lend-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "GbKdmBe4ycCYCQLQSjqGg6UHYoYfbyJyq5WrG35pv1si",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "spark-lend",
+    "messariSlug": "spark-lend-gnosis",
+    "chain": "gnosis",
+    "subgraphId": "Bw4RH37UbbGEhHo4FaWwT1dn9QJzm1XSZCyK1cbr6ZKM",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "radiant",
+    "messariSlug": "radiant-capital-arbitrum",
+    "chain": "arbitrum",
+    "subgraphId": "5HTkKJNSm72tUGakwj8yroDGHxc6fBhmLaA5oJepZGL3",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "uwu-lend",
+    "messariSlug": "uwu-lend-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "CZBD7e8VGvNa6WkBHZAaC688bsZ35UvAM1AuDdVng2aE",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "qidao",
+    "messariSlug": "qidao-arbitrum",
+    "chain": "arbitrum",
+    "subgraphId": "Duw2tSACo9uRGFctAGsCc9pF7ZGMyqpjkAHPwm49dZe6",
+    "schemaVersion": "1.3.0",
+    "methodologyVersion": "1.0.1",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "qidao",
+    "messariSlug": "qidao-avalanche",
+    "chain": "avalanche",
+    "subgraphId": "98GG74FxxsG25Ltd8qvJ9BRfFmQWyN1AkS92MZBG1BsR",
+    "schemaVersion": "1.3.0",
+    "methodologyVersion": "1.0.1",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "qidao",
+    "messariSlug": "qidao-base",
+    "chain": "base",
+    "subgraphId": "9NHJ9k31qaGCYXppm9isJTiEoiB6v3tJDnR6SrQrxcjw",
+    "schemaVersion": "1.3.0",
+    "methodologyVersion": "1.0.1",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "qidao",
+    "messariSlug": "qidao-bsc",
+    "chain": "bsc",
+    "subgraphId": "4DcztqYL7UG5bjdisWWvnj3m4NtK5J3bs89scihAkicr",
+    "schemaVersion": "1.3.0",
+    "methodologyVersion": "1.0.1",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "qidao",
+    "messariSlug": "qidao-ethereum",
+    "chain": "ethereum",
+    "subgraphId": "BmQSQaXsivq866kUobQSbyxycjk3D7CiaczKgu3P9ifB",
+    "schemaVersion": "1.3.0",
+    "methodologyVersion": "1.0.1",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "qidao",
+    "messariSlug": "qidao-fantom",
+    "chain": "fantom",
+    "subgraphId": "hf51jYbZ9uESiuBabfxf6fRdc22xtmNWX9c3SRrct2q",
+    "schemaVersion": "1.3.0",
+    "methodologyVersion": "1.0.1",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "qidao",
+    "messariSlug": "qidao-polygon",
+    "chain": "polygon",
+    "subgraphId": "5UxEcMvYW4vVYP81tkPQMAvJv1e4m1xU8BJkDXBnpc6x",
+    "schemaVersion": "1.3.0",
+    "methodologyVersion": "1.0.1",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "qidao",
+    "messariSlug": "qidao-moonriver",
+    "chain": "moonriver",
+    "subgraphId": "HzDP5zXKyjnEJP9TnFirk3qA24SUp4AfzKUBSRcBekgz",
+    "schemaVersion": "1.3.0",
+    "methodologyVersion": "1.0.1",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "qidao",
+    "messariSlug": "qidao-optimism",
+    "chain": "optimism",
+    "subgraphId": "4JbWxzxBNCpAaVz72Gt2UthgiwcWZQLKDBhmSE7wKY2K",
+    "schemaVersion": "1.3.0",
+    "methodologyVersion": "1.0.1",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "qidao",
+    "messariSlug": "qidao-gnosis",
+    "chain": "gnosis",
+    "subgraphId": "7vJEsy8pJmRQZQh5kTXNz68SRHXBS859hMq3o5uWF1Ac",
+    "schemaVersion": "1.3.1",
+    "methodologyVersion": "1.0.1",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "qidao",
+    "messariSlug": "qidao-harmony",
+    "chain": "harmony",
+    "subgraphId": "DCEQvXCiqtpMybQLL4YAgdCzqHzRH6wFFnCDnnLBBuvf",
+    "schemaVersion": "1.3.0",
+    "methodologyVersion": "1.0.1",
+    "queryKind": "messari"
+  },
+  {
+    "protocolKey": "superlend",
+    "messariSlug": "superlend-etherlink-mainnet",
+    "chain": "etherlink",
+    "subgraphId": "HCzjsuU3dW7V6Z2BP4ncyzkkKYi3QXeuJFaboSak2U7V",
+    "schemaVersion": "3.1.0",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "messari"
+  }
+]

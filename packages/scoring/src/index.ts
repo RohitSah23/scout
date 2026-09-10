@@ -66,6 +66,9 @@ export function scoreCandidate(
   return {
     protocol: candidate.protocol,
     chain: candidate.chain,
+    assetSymbol: candidate.assetSymbol,
+    sourceProtocol: candidate.sourceProtocol,
+    windowLabel: candidate.windowLabel,
     dimensions,
     composite: opportunityScore,
     opportunityScore,

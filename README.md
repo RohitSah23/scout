@@ -141,7 +141,7 @@ node apps/agent/dist/index.js "Analyze lending protocols on Base. Best developer
 
 | Partner | Role in Scout | Key Code Package |
 |---|---|---|
-| **The Graph** | Live onchain protocol discovery & Messari standardized lending/CDP subgraphs (*"1 query × N protocols"*) | [`packages/graph`](packages/graph) |
+| **The Graph** | Live onchain protocol discovery & Messari standardized lending/CDP subgraphs (*"1 query × N protocols"*); each protocol query fetches **top 5 markets** (`inputToken`, TVL, 7d snapshots) and flattens into a **cross-protocol token leaderboard** (Aave uses native 1h trending) | [`packages/graph`](packages/graph) |
 | **OpenSEO** | Internet/search intelligence, keyword search volume, SERP rankings, and competitor gap metrics | [`packages/openseo`](packages/openseo) |
 | **x402** | Machine-native HTTP 402 payment flow for deep analysis reports ($0.03 USDC on Base Sepolia) | [`packages/x402`](packages/x402) |
 | **ENSv2** | Onchain agent identity (`scout.<project>.eth`), Permissioned Resolver & Enhanced Access Control | [`packages/ens`](packages/ens) |

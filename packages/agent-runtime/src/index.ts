@@ -7,7 +7,7 @@ import type {
   Source,
 } from "@scout/schemas";
 import { GraphProvider } from "@scout/graph";
-import { OpenSEOProvider } from "@scout/openseo";
+import { OpenSEOProvider, neutralSeoMetrics } from "@scout/openseo";
 import {
   buildScoreBreakdown,
   evaluateUncertaintyGate,
@@ -67,6 +67,19 @@ function touchSession(session: ResearchSession, runtime: ResearchRuntime) {
   runtime.onSessionUpdate?.(session);
 }
 
+function scoringContextFor(
+  session: ResearchSession,
+  candidate: ResearchSession["candidates"][number],
+  extras?: Partial<ScoringContext>,
+): ScoringContext {
+  return {
+    graphEvidenceId: candidate.id,
+    seoEvidenceId: `openseo-${candidate.protocol.toLowerCase().replace(/\s+/g, "-")}-${candidate.chain}`,
+    sourceCount: session.sources.length,
+    ...extras,
+  };
+}
+
 function createRuntime(
   opts: Pick<RunResearchOptions, "onLog" | "onSessionUpdate">,
   decisionLog: DecisionLogEntry[] = [],
@@ -98,6 +111,7 @@ export async function runResearch(opts: RunResearchOptions): Promise<ResearchSes
     request: opts.request,
     chain: opts.chain ?? "base",
     category: opts.category ?? "lending",
+    researchMode: "tokens",
     agent: { name: "scout" },
     budget,
     sources: [],
@@ -127,6 +141,8 @@ export async function runResearch(opts: RunResearchOptions): Promise<ResearchSes
       sources: Source[];
       queryTemplate: string;
       protocolCount: number;
+      tokenCount: number;
+      discoveredCount: number;
       messariProtocolCount: number;
       composable: boolean;
       schemaStandard: string;
@@ -135,11 +151,13 @@ export async function runResearch(opts: RunResearchOptions): Promise<ResearchSes
 
     emit(
       runtime,
-      `Found ${graphResult.protocolCount} lending deployments on ${opts.chain ?? "base"} (${graphResult.messariProtocolCount} Messari-composable).`,
+      `Queried ${graphResult.discoveredCount} lending subgraphs on ${opts.chain ?? "base"} — ${graphResult.protocolCount} protocols returned live data, ${graphResult.tokenCount} lending assets ranked (${graphResult.messariProtocolCount} Messari-composable).`,
       "info",
       "graph.query",
       {
         protocolCount: graphResult.protocolCount,
+        tokenCount: graphResult.tokenCount,
+        discoveredCount: graphResult.discoveredCount,
         messariProtocolCount: graphResult.messariProtocolCount,
         queryTemplate: graphResult.queryTemplate,
         composable: graphResult.composable,
@@ -149,55 +167,95 @@ export async function runResearch(opts: RunResearchOptions): Promise<ResearchSes
     );
     emit(
       runtime,
-      `Composable query — 1 Messari template × ${graphResult.messariProtocolCount} protocols${graphResult.protocolCount > graphResult.messariProtocolCount ? ` (+ ${graphResult.protocolCount - graphResult.messariProtocolCount} native adapter)` : ""}.`,
+      `Composable query — 1 Messari template × ${graphResult.messariProtocolCount} protocols, top 5 assets each${graphResult.protocolCount > graphResult.messariProtocolCount ? ` (+ native adapters)` : ""}.`,
       "info",
       "graph.complete",
       {
         deployments: graphResult.protocolCount,
+        tokenCount: graphResult.tokenCount,
         messariProtocolCount: graphResult.messariProtocolCount,
         composable: graphResult.composable,
         schemaStandard: graphResult.schemaStandard,
         skipped: graphResult.skipped,
-        evidence: ["TVL", "deposit/borrow volume", "liquidations", "unique users"],
+        evidence: ["market TVL", "deposit/borrow flow", "1h trending events", "token-level growth"],
       },
     );
 
     session.sources.push(...graphResult.sources);
     let candidates = graphResult.candidates;
-    emit(runtime, `Shortlisted ${candidates.length} candidates.`, "info", "candidates.updated", {
-      count: candidates.length,
-      protocolCount: graphResult.protocolCount,
-      stage: "shortlist",
-    });
+    emit(
+      runtime,
+      `${graphResult.tokenCount} lending assets ranked across ${graphResult.protocolCount} protocols (${graphResult.skipped.length} skipped).`,
+      "info",
+      "candidates.updated",
+      {
+        count: candidates.length,
+        tokenCount: graphResult.tokenCount,
+        protocolCount: graphResult.protocolCount,
+        discoveredCount: graphResult.discoveredCount,
+        skippedCount: graphResult.skipped.length,
+        skipped: graphResult.skipped,
+        stage: "discovered",
+      },
+    );
     session.candidates = candidates;
     touchSession(session, runtime);
 
     const openseo = new OpenSEOProvider(opts.openseoApiKey, opts.openseoProjectId);
     emit(runtime, "OpenSEO keyword analysis started.", "info", "openseo.started");
-    const seoResult = await openseo.execute({ action: "enrich-candidates", candidates }) as {
-      candidates: ResearchSession["candidates"];
-      sources: Source[];
-    };
-    candidates = seoResult.candidates;
-    session.sources.push(...seoResult.sources);
-    session.candidates = candidates;
-    emit(runtime, "OpenSEO web intelligence complete.", "info", "openseo.complete", {
-      evidence: ["search demand", "organic visibility", "content gap", "competition"],
-    });
+    let sparseSeo: string[] = [];
+    try {
+      const seoResult = await openseo.execute({ action: "enrich-candidates", candidates }) as {
+        candidates: ResearchSession["candidates"];
+        sources: Source[];
+        sparse?: string[];
+        unavailable?: boolean;
+      };
+      candidates = seoResult.candidates;
+      session.sources.push(...seoResult.sources);
+      session.candidates = candidates;
+      sparseSeo = seoResult.sparse ?? [];
+      emit(
+        runtime,
+        seoResult.unavailable
+          ? `OpenSEO unavailable (${sparseSeo.length} candidates scored with neutral SEO baseline). Research continues with on-chain data.`
+          : sparseSeo.length > 0
+            ? `OpenSEO complete — ${sparseSeo.length} protocol(s) had sparse keyword data (${sparseSeo.slice(0, 3).join(", ")}${sparseSeo.length > 3 ? "…" : ""}); scored with neutral SEO baseline.`
+            : "OpenSEO web intelligence complete.",
+        seoResult.unavailable || sparseSeo.length > 0 ? "warn" : "info",
+        "openseo.complete",
+        {
+          evidence: ["search demand", "organic visibility", "content gap", "competition"],
+          sparse: sparseSeo,
+          unavailable: seoResult.unavailable ?? false,
+        },
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "unknown error";
+      sparseSeo = candidates.map((c) => c.protocol);
+      emit(
+        runtime,
+        `OpenSEO failed (${message}). Continuing with on-chain evidence and neutral SEO baseline.`,
+        "warn",
+        "openseo.complete",
+        { sparse: sparseSeo, unavailable: true, error: message },
+      );
+      session.candidates = candidates.map((c) => ({ ...c, seoMetrics: neutralSeoMetrics() }));
+      candidates = session.candidates;
+    }
     touchSession(session, runtime);
 
-    const graphEvidenceId = session.sources.find((s) => s.type === "onchain")?.id ?? "graph";
-    const seoEvidenceId = session.sources.find((s) => s.type === "web")?.id ?? "seo";
-    const ctx: ScoringContext = { graphEvidenceId, seoEvidenceId, sourceCount: 2 };
-
     const onchainRanks = candidates.map((c) => {
+      const tm = c.tokenMetrics;
+      if (tm?.trendingScore && tm.trendingScore > 0) return tm.trendingScore;
+      if (tm?.grossFlowUsd && tm.grossFlowUsd > 0) return tm.grossFlowUsd;
       const m = c.onchainMetrics;
       return ((m?.tvlChangePct ?? 0) + (m?.activeAddressesChangePct ?? 0)) / 2;
     });
     const maxRank = Math.max(...onchainRanks, 1);
 
     const scores = candidates.map((c, i) =>
-      scoreCandidate(c, (onchainRanks[i] / maxRank) * 100, ctx, false),
+      scoreCandidate(c, (onchainRanks[i] / maxRank) * 100, scoringContextFor(session, c), false),
     );
 
     const provisional = buildScoreBreakdown(scores);
@@ -263,7 +321,17 @@ export async function runResearch(opts: RunResearchOptions): Promise<ResearchSes
     return await finalizeResearch(session, runtime, candidates, scores);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Research failed";
-    emit(runtime, `Research failed: ${message}`, "warn", "research.failed", { error: message });
+    const stage = [...runtime.decisionLog].reverse().find((e) => e.eventType)?.eventType;
+    const hint =
+      /fetch failed|ECONNRESET|ETIMEDOUT/i.test(message) && stage === "openseo.started"
+        ? " (OpenSEO API network error — retry in a moment)"
+        : /fetch failed|ECONNRESET|ETIMEDOUT/i.test(message) && stage === "graph.discovery"
+          ? " (The Graph gateway network error — retry in a moment)"
+          : "";
+    emit(runtime, `Research failed: ${message}${hint}`, "warn", "research.failed", {
+      error: message,
+      stage,
+    });
     session.status = "failed";
     touchSession(session, runtime);
     throw err;
@@ -363,16 +431,10 @@ export async function authorizePaymentAndComplete(
     },
   );
 
-  const graphEvidenceId = session.sources.find((s) => s.type === "onchain")?.id ?? "graph";
-  const seoEvidenceId = session.sources.find((s) => s.type === "web")?.id ?? "seo";
-  const ctx: ScoringContext = {
-    graphEvidenceId,
-    seoEvidenceId,
-    paidEvidenceId: paidSourceId,
-    sourceCount: 3,
-  };
-
   const onchainRanks = session.candidates.map((c) => {
+    const tm = c.tokenMetrics;
+    if (tm?.trendingScore && tm.trendingScore > 0) return tm.trendingScore;
+    if (tm?.grossFlowUsd && tm.grossFlowUsd > 0) return tm.grossFlowUsd;
     const m = c.onchainMetrics;
     return ((m?.tvlChangePct ?? 0) + (m?.activeAddressesChangePct ?? 0)) / 2;
   });
@@ -382,7 +444,10 @@ export async function authorizePaymentAndComplete(
     scoreCandidate(
       c,
       (onchainRanks[i] / maxRank) * 100,
-      ctx,
+      scoringContextFor(session, c, {
+        paidEvidenceId: paidSourceId,
+        sourceCount: session.sources.length + 1,
+      }),
       c.protocol === targetProtocol,
     ),
   );
@@ -399,17 +464,17 @@ export async function denyPaymentAndComplete(
   const runtime = createRuntime(opts, [...session.decisionLog]);
   emit(runtime, "Paid deep analysis skipped by user. Proceeding with existing evidence.", "info");
 
-  const graphEvidenceId = session.sources.find((s) => s.type === "onchain")?.id ?? "graph";
-  const seoEvidenceId = session.sources.find((s) => s.type === "web")?.id ?? "seo";
-  const ctx: ScoringContext = { graphEvidenceId, seoEvidenceId, sourceCount: 2 };
   const candidates = session.candidates;
   const onchainRanks = candidates.map((c) => {
+    const tm = c.tokenMetrics;
+    if (tm?.trendingScore && tm.trendingScore > 0) return tm.trendingScore;
+    if (tm?.grossFlowUsd && tm.grossFlowUsd > 0) return tm.grossFlowUsd;
     const m = c.onchainMetrics;
     return ((m?.tvlChangePct ?? 0) + (m?.activeAddressesChangePct ?? 0)) / 2;
   });
   const maxRank = Math.max(...onchainRanks, 1);
   const scores = candidates.map((c, i) =>
-    scoreCandidate(c, (onchainRanks[i] / maxRank) * 100, ctx, false),
+    scoreCandidate(c, (onchainRanks[i] / maxRank) * 100, scoringContextFor(session, c), false),
   );
   session.paymentPending = undefined;
   session.status = "running";

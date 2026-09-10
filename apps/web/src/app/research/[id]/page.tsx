@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ScoutShell } from "@/components/shell/ScoutShell";
 import { AgentStatus } from "@/components/shell/AgentStatus";
 import { ResearchTimeline } from "@/components/research/ResearchTimeline";
+import { CandidateDiscoveryPanel } from "@/components/research/CandidateDiscoveryPanel";
 import { CandidateFunnel } from "@/components/research/CandidateFunnel";
 import { CandidateComparison } from "@/components/scoring/CandidateComparison";
 import { ResearchReport } from "@/components/report/ResearchReport";
@@ -51,6 +52,7 @@ function ResearchDetailContent({ id }: { id: string }) {
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
               <ResearchTimeline entries={logs} loading={loading} />
+              <CandidateDiscoveryPanel session={session} />
               {session?.scoreBreakdown && session.status !== "completed" && (
                 <CandidateComparison
                   candidates={session.scoreBreakdown.candidates}

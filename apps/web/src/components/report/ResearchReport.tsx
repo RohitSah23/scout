@@ -6,7 +6,9 @@ import { ReportHeader } from "./ReportHeader";
 import { RecommendationBlock } from "./RecommendationBlock";
 import { DecisionLogView } from "./DecisionLog";
 import { ScoreBreakdown } from "@/components/scoring/ScoreBreakdown";
+import { CandidateDiscoveryPanel } from "@/components/research/CandidateDiscoveryPanel";
 import { CandidateComparison } from "@/components/scoring/CandidateComparison";
+import { TokenLeaderboardTable } from "@/components/scoring/TokenLeaderboardTable";
 import { CombinedSignalView } from "@/components/scoring/CombinedSignalView";
 import { EvidenceDrawer } from "@/components/evidence/EvidenceDrawer";
 import { EvidencePanel } from "@/components/evidence/EvidencePanel";
@@ -63,6 +65,7 @@ export function ResearchReport({
           />
           <RecommendationBlock
             recommendation={rec}
+            winner={winner}
             confidence={session.confidence}
             sources={evidenceSources.map((s) => s.name)}
           />
@@ -71,6 +74,13 @@ export function ResearchReport({
             <ScoreBreakdown candidate={winner} disclaimer={session.scoreBreakdown?.disclaimer} />
             <CombinedSignalView candidate={winner} />
           </div>
+
+          <TokenLeaderboardTable
+            candidates={session.scoreBreakdown?.candidates ?? []}
+            rawCandidates={session.candidates}
+          />
+
+          <CandidateDiscoveryPanel session={session} />
 
           <CandidateComparison
             candidates={session.scoreBreakdown?.candidates ?? []}

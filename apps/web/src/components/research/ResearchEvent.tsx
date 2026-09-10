@@ -10,7 +10,7 @@ const EVENT_LABELS: Record<string, { title: string; tool?: string }> = {
   "graph.complete": { title: "On-chain Analysis", tool: "graph" },
   "openseo.started": { title: "OpenSEO", tool: "openseo" },
   "openseo.complete": { title: "OpenSEO", tool: "openseo" },
-  "candidates.updated": { title: "Candidate Shortlist" },
+  "candidates.updated": { title: "All Candidates" },
   "scores.provisional": { title: "Scoring" },
   "uncertainty.detected": { title: "Uncertainty" },
   "payment.required": { title: "Payment Required", tool: "x402" },

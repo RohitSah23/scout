@@ -61,7 +61,21 @@ function protocolTokens(protocol: string): string[] {
   if (lower.includes("radiant")) tokens.push("radiant");
   if (lower.includes("sonne")) tokens.push("sonne");
   if (lower.includes("qidao") || lower.includes("qi dao")) tokens.push("qidao");
+  if (lower.includes("rwa")) tokens.push("rwa", "aave");
+  if (lower.includes("arc")) tokens.push("aave");
+  if (lower.includes("amm")) tokens.push("aave");
   return [...new Set(tokens)];
+}
+
+export function neutralSeoMetrics(): SeoMetrics {
+  return {
+    searchDemandChangePct: 0,
+    organicVisibility: 0,
+    contentGapScore: 20,
+    competitorSerpDominance: 50,
+    developerIntentScore: 20,
+    aiVisibilityScore: 0,
+  };
 }
 
 function rowMatchesProtocol(row: KeywordRow, protocol: string): boolean {
@@ -118,7 +132,7 @@ export function buildSeoMetrics(
     research.results?.flatMap((r) => (r.ok ? r.rows ?? [] : [])) ?? [];
 
   if (rows.length === 0) {
-    throw new Error(`OpenSEO returned no keyword rows for ${protocol}`);
+    return neutralSeoMetrics();
   }
 
   const relevant = rows.filter((row) => rowMatchesProtocol(row, protocol));

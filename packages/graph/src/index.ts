@@ -7,13 +7,15 @@ import type {
   Source,
 } from "@scout/schemas";
 import { GraphMetricsError, GraphProviderError } from "./errors.js";
+import { discoverDeployments } from "./discovery.js";
 import {
   LENDING_QUERY_TEMPLATE,
   MESSARI_LENDING_STANDARD,
   queryBodyForKind,
   queryForKind,
 } from "./queries.js";
-import registryData from "./registry/lending-cdp.json" with { type: "json" };
+import { extractTokenCandidates } from "./tokenCandidates.js";
+import { aggregateHourlyTrending, oneHourAgoUnix } from "./trending.js";
 
 const MCP_SSE_URL = "https://subgraphs.mcp.thegraph.com/sse";
 const GATEWAY_URL = "https://gateway.thegraph.com/api";
@@ -81,16 +83,12 @@ export class GraphProvider implements DataProvider {
     }
   }
 
-  getRegistry(): MessariDeployment[] {
-    return registryData as MessariDeployment[];
+  async getRegistry(): Promise<MessariDeployment[]> {
+    return discoverDeployments();
   }
 
   async discoverLending(chain?: string): Promise<MessariDeployment[]> {
-    const registry = this.getRegistry();
-    if (chain) {
-      return registry.filter((d) => d.chain.toLowerCase() === chain.toLowerCase());
-    }
-    return registry;
+    return discoverDeployments(chain);
   }
 
   getComposableQuery(): string {
@@ -154,70 +152,90 @@ export class GraphProvider implements DataProvider {
     queryTemplate: string;
     queryTemplatesUsed: string[];
     protocolCount: number;
+    tokenCount: number;
     messariProtocolCount: number;
+    discoveredCount: number;
     composable: boolean;
     schemaStandard: string;
     skipped: string[];
   }> {
     const deployments = await this.discoverLending(chain);
+    const discoveredCount = deployments.length;
     const candidates: Candidate[] = [];
     const sources: Source[] = [];
     const queriesUsed = new Set<string>();
     const skipped: string[] = [];
     let messariCount = 0;
+    let protocolCount = 0;
 
-    for (const dep of deployments) {
-      try {
-        const { data, query } = await this.queryDeployment(dep);
-        queriesUsed.add(query.trim());
-        const kind = queryKind(dep);
-        if (kind === "messari") messariCount += 1;
+    const results = await Promise.all(
+      deployments.map(async (dep) => {
+        try {
+          const { data, query } = await this.queryDeployment(dep);
+          const kind = queryKind(dep);
+          const sourceData = this.enrichSourceData(data, kind, dep);
+          return { dep, data: sourceData, query, kind };
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "unknown error";
+          skipped.push(`${dep.protocol} (${dep.chain}): ${message}`);
+          return null;
+        }
+      }),
+    );
 
-        const metrics = this.normalizeMetrics(data, dep);
-        const sourceId = `graph-${dep.protocol.toLowerCase().replace(/\s+/g, "-")}-${dep.chain}`;
+    for (const result of results) {
+      if (!result) continue;
+      const { dep, data, query, kind } = result;
+      queriesUsed.add(query.trim());
+      if (kind === "messari") messariCount += 1;
+      protocolCount += 1;
 
-        sources.push({
-          id: sourceId,
-          name: "The Graph",
-          type: "onchain",
-          cost: 0,
-          data: {
-            live: true,
-            composable: kind === "messari",
-            schemaStandard: kind === "messari" ? MESSARI_LENDING_STANDARD : kind,
-            messariSlug: dep.messariSlug,
-            queryKind: kind,
-            ...(data as Record<string, unknown>),
-          },
-          provenance: {
-            subgraphId: dep.subgraphId,
-            deploymentId: dep.deploymentId,
-            schemaVersion: dep.schemaVersion,
-            query,
-          },
-        });
+      const root = data as { data?: Record<string, unknown> };
+      const payload = root.data ?? {};
+      const trendingReserves = payload.trendingReserves as ReturnType<
+        typeof aggregateHourlyTrending
+      > | undefined;
 
-        candidates.push({
-          id: sourceId,
-          protocol: dep.protocol,
-          chain: dep.chain,
-          onchainMetrics: metrics,
-          provenance: {
-            subgraphId: dep.subgraphId,
-            deploymentId: dep.deploymentId,
-            schemaVersion: dep.schemaVersion,
-            methodologyVersion: dep.methodologyVersion ?? dep.schemaVersion,
-          },
-        });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "unknown error";
-        skipped.push(`${dep.protocol} (${dep.chain}): ${message}`);
+      const tokenRows = extractTokenCandidates(dep, kind, payload, trendingReserves);
+      if (tokenRows.length === 0) {
+        skipped.push(`${dep.protocol} (${dep.chain}): no token markets returned`);
+        continue;
       }
+      candidates.push(...tokenRows);
+
+      const slugKey = (dep.messariSlug ?? `${dep.protocol}-${dep.chain}`)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      const sourceId = `graph-${slugKey}`;
+
+      sources.push({
+        id: sourceId,
+        name: "The Graph",
+        type: "onchain",
+        cost: 0,
+        data: {
+          live: true,
+          composable: kind === "messari",
+          schemaStandard: kind === "messari" ? MESSARI_LENDING_STANDARD : kind,
+          messariSlug: dep.messariSlug,
+          queryKind: kind,
+          sourceProtocol: dep.protocol,
+          tokenCandidates: tokenRows,
+          ...(data as Record<string, unknown>),
+        },
+        provenance: {
+          subgraphId: dep.subgraphId,
+          deploymentId: dep.deploymentId,
+          schemaVersion: dep.schemaVersion,
+          query,
+        },
+      });
     }
 
     if (candidates.length === 0) {
       throw new GraphProviderError(
-        `No live subgraph candidates returned for chain "${chain ?? "all"}". Check GRAPH_GATEWAY_API_KEY and registry deployments.${skipped.length ? ` Skipped: ${skipped.join("; ")}` : ""}`,
+        `No live lending assets returned for chain "${chain ?? "all"}". Check GRAPH_GATEWAY_API_KEY and registry deployments.${skipped.length ? ` Skipped: ${skipped.join("; ")}` : ""}`,
       );
     }
 
@@ -229,7 +247,9 @@ export class GraphProvider implements DataProvider {
       sources,
       queryTemplate: messariQuery,
       queryTemplatesUsed,
-      protocolCount: candidates.length,
+      protocolCount,
+      tokenCount: candidates.length,
+      discoveredCount,
       messariProtocolCount: messariCount,
       composable: messariCount > 0 && queryTemplatesUsed.includes(messariQuery),
       schemaStandard: MESSARI_LENDING_STANDARD,
@@ -237,11 +257,58 @@ export class GraphProvider implements DataProvider {
     };
   }
 
+  private enrichSourceData(
+    data: unknown,
+    kind: GraphQueryKind,
+    dep: MessariDeployment,
+  ): unknown {
+    const root = data as { data?: Record<string, unknown> };
+    const payload = root.data ?? {};
+
+    if (kind === "aave-v3-trending") {
+      const trendingReserves = aggregateHourlyTrending(payload);
+      return {
+        data: {
+          ...payload,
+          trendingReserves,
+          markets: trendingReserves.map((row) => ({
+            id: row.symbol,
+            name: row.symbol,
+            totalValueLockedUSD: String(row.grossFlowUsd),
+            inputToken: { symbol: row.symbol },
+          })),
+          windowHours: 1,
+          oneHourAgo: oneHourAgoUnix(),
+          sourceProtocol: dep.protocol,
+        },
+      };
+    }
+
+    if (kind === "messari") {
+      const protocolSnapshots = payload.protocolSnapshots ?? payload.marketDailySnapshots;
+      return {
+        data: {
+          ...payload,
+          marketDailySnapshots: protocolSnapshots,
+          sourceProtocol: dep.protocol,
+        },
+      };
+    }
+
+    return data;
+  }
+
   normalizeMetrics(data: unknown, dep: MessariDeployment): OnchainMetrics {
     const kind = queryKind(dep);
     const root = data as { data?: Record<string, unknown> };
+    if (kind === "aave-v3-trending") {
+      return this.normalizeAaveV3TrendingMetrics(root.data, dep.protocol);
+    }
     if (kind === "aave-v3") {
       return this.normalizeAaveV3Metrics(root.data, dep.protocol);
+    }
+    if (kind === "compound-v3") {
+      return this.normalizeCompoundV3Metrics(root.data, dep.protocol);
     }
     return this.normalizeMessariMetrics(data, dep.protocol);
   }
@@ -251,9 +318,12 @@ export class GraphProvider implements DataProvider {
     const d = root.data as {
       protocols?: Array<{ cumulativeUniqueUsers?: number }>;
       marketDailySnapshots?: MessariSnapshot[];
+      protocolSnapshots?: MessariSnapshot[];
     };
 
-    const snapshots = [...(d?.marketDailySnapshots ?? [])].sort(
+    const protocolSnapshots = d?.protocolSnapshots ?? d?.marketDailySnapshots;
+
+    const snapshots = [...(protocolSnapshots ?? [])].sort(
       (a, b) => Number(b.timestamp ?? 0) - Number(a.timestamp ?? 0),
     );
 
@@ -290,6 +360,39 @@ export class GraphProvider implements DataProvider {
       newUsersChangePct: pct1(volumeChange * 0.85),
       priorPeriodGrowthPct: tvlChange,
       returningUserRatio: uniqueUsers > 0 ? pct1(Math.min(100, uniqueUsers / 1000)) : undefined,
+    };
+  }
+
+  private normalizeAaveV3TrendingMetrics(
+    payload: Record<string, unknown> | undefined,
+    protocol: string,
+  ): OnchainMetrics {
+    const trending = (payload?.trendingReserves ?? []) as Array<{
+      trendingScore?: number;
+      grossFlowUsd?: number;
+      netInflowUsd?: number;
+      liquidationUsd?: number;
+    }>;
+
+    if (trending.length === 0) {
+      throw new GraphMetricsError(protocol, "no trending reserves in last hour");
+    }
+
+    const top = trending[0];
+    const avgScore =
+      trending.reduce((sum, row) => sum + (row.trendingScore ?? 0), 0) / trending.length;
+    const momentum = avgScore > 0 ? pctChange(top.trendingScore ?? 0, avgScore) : 100;
+    const grossFlow = top.grossFlowUsd ?? 0;
+    const netPct = grossFlow > 0 ? pct1(((top.netInflowUsd ?? 0) / grossFlow) * 100) : 0;
+    const liqPct = grossFlow > 0 ? pct1(((top.liquidationUsd ?? 0) / grossFlow) * 100) : 0;
+
+    return {
+      tvlChangePct: netPct,
+      volumeChangePct: momentum,
+      txChangePct: liqPct,
+      activeAddressesChangePct: momentum,
+      newUsersChangePct: pct1(momentum * 0.5),
+      priorPeriodGrowthPct: netPct,
     };
   }
 
@@ -330,9 +433,41 @@ export class GraphProvider implements DataProvider {
       priorPeriodGrowthPct: tvlChange,
     };
   }
+
+  private normalizeCompoundV3Metrics(
+    payload: Record<string, unknown> | undefined,
+    protocol: string,
+  ): OnchainMetrics {
+    const days = (payload?.dailyProtocolAccountings ?? []) as Array<{
+      accounting?: { totalSupplyUsd?: string; totalBorrowUsd?: string };
+    }>;
+
+    if (days.length < 2) {
+      throw new GraphMetricsError(protocol, "insufficient dailyProtocolAccountings");
+    }
+
+    const recentSupply = parseFloat(days[0]?.accounting?.totalSupplyUsd ?? "0");
+    const priorSupply = parseFloat(days[days.length - 1]?.accounting?.totalSupplyUsd ?? "0");
+    const recentBorrow = parseFloat(days[0]?.accounting?.totalBorrowUsd ?? "0");
+    const priorBorrow = parseFloat(days[days.length - 1]?.accounting?.totalBorrowUsd ?? "0");
+
+    const tvlChange = pctChange(recentSupply, priorSupply);
+    const borrowChange = pctChange(recentBorrow, priorBorrow);
+
+    return {
+      tvlChangePct: tvlChange,
+      volumeChangePct: borrowChange,
+      txChangePct: pct1(tvlChange * 0.5),
+      activeAddressesChangePct: pct1(tvlChange * 0.4),
+      newUsersChangePct: pct1(tvlChange * 0.3),
+      priorPeriodGrowthPct: borrowChange,
+    };
+  }
 }
 
 export { GraphMetricsError, GraphProviderError } from "./errors.js";
+export { extractTokenCandidates } from "./tokenCandidates.js";
+export { aggregateHourlyTrending, oneHourAgoUnix } from "./trending.js";
 export {
   MCP_SSE_URL,
   LENDING_QUERY_TEMPLATE,
