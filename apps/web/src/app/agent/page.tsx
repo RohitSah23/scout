@@ -15,6 +15,7 @@ export default function AgentPage() {
     ensName: string;
     status: string;
     budgetCap: number;
+    records?: Record<string, string>;
   } | null>(null);
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export default function AgentPage() {
           ensName={identity?.ensName ?? "scout.base.eth"}
           budgetCap={identity?.budgetCap ?? 0.5}
           status={identity?.status ?? "ACTIVE"}
+          mcpEndpoint={identity?.records?.["agent.mcp"]}
         />
 
         <PermissionList />

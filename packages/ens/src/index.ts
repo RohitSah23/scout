@@ -1,26 +1,26 @@
+import { PrivyClient } from "@privy-io/node";
+import { createViemAccount } from "@privy-io/node/viem";
 import type { AgentIdentity } from "@scout/schemas";
 import {
+  concat,
   createPublicClient,
   createWalletClient,
+  encodeFunctionData,
   http,
+  keccak256,
   namehash,
+  stringToHex,
+  type Account,
   type Address,
   type Hex,
 } from "viem";
+import { normalize } from "viem/ens";
 import { sepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
+const ROLE_SET_TEXT = 1n << 4n;
+
 const resolverAbi = [
-  {
-    type: "function",
-    name: "text",
-    stateMutability: "view",
-    inputs: [
-      { name: "node", type: "bytes32" },
-      { name: "key", type: "string" },
-    ],
-    outputs: [{ name: "", type: "string" }],
-  },
   {
     type: "function",
     name: "setText",
@@ -32,54 +32,117 @@ const resolverAbi = [
     ],
     outputs: [],
   },
+  {
+    type: "function",
+    name: "multicall",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "data", type: "bytes[]" }],
+    outputs: [{ name: "results", type: "bytes[]" }],
+  },
+  {
+    type: "function",
+    name: "roles",
+    stateMutability: "view",
+    inputs: [
+      { name: "resource", type: "uint256" },
+      { name: "account", type: "address" },
+    ],
+    outputs: [{ name: "roleBitmap", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "hasRootRoles",
+    stateMutability: "view",
+    inputs: [
+      { name: "roleBitmap", type: "uint256" },
+      { name: "account", type: "address" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
 ] as const;
 
 export interface ENSConfig {
   ensName: string;
-  resolverAddress: Address;
-  budgetCap: number;
   rpcUrl: string;
-  privateKey: Hex;
-  unauthorizedPrivateKey?: Hex;
+  account: Account;
+  unauthorizedAccount?: Account;
+}
+
+function textResource(name: string, key: string): bigint {
+  const node = namehash(normalize(name));
+  const part = keccak256(stringToHex(key));
+  return BigInt(keccak256(concat([node, part])));
 }
 
 export class ENSIdentityProvider implements AgentIdentity {
   private readonly publicClient;
-  private readonly account;
-  private readonly walletClient;
-  private statusWriteProven = false;
 
   constructor(private readonly config: ENSConfig) {
-    this.account = privateKeyToAccount(config.privateKey);
     this.publicClient = createPublicClient({ chain: sepolia, transport: http(config.rpcUrl) });
-    this.walletClient = createWalletClient({
-      account: this.account,
+  }
+
+  private async resolverAddress(): Promise<Address> {
+    const resolver = await this.publicClient.getEnsResolver({
+      name: normalize(this.config.ensName),
+    });
+    if (!resolver) throw new Error(`${this.config.ensName} has no resolver`);
+    return resolver;
+  }
+
+  private wallet(account = this.config.account) {
+    return createWalletClient({
+      account,
       chain: sepolia,
-      transport: http(config.rpcUrl),
+      transport: http(this.config.rpcUrl),
     });
   }
 
   async resolveName(): Promise<string> {
+    const address = await this.publicClient.getEnsAddress({
+      name: normalize(this.config.ensName),
+    });
+    if (!address) throw new Error(`${this.config.ensName} does not resolve to an address`);
+    if (address.toLowerCase() !== this.config.account.address.toLowerCase()) {
+      throw new Error(`${this.config.ensName} does not resolve to the configured ENS agent wallet`);
+    }
     return this.config.ensName;
   }
 
   async getPermissions(): Promise<Record<string, boolean>> {
+    const resolver = await this.resolverAddress();
+    const [statusRoles, reportRoles, rootText] = await Promise.all([
+      this.publicClient.readContract({
+        address: resolver,
+        abi: resolverAbi,
+        functionName: "roles",
+        args: [textResource(this.config.ensName, "research.status"), this.config.account.address],
+      }),
+      this.publicClient.readContract({
+        address: resolver,
+        abi: resolverAbi,
+        functionName: "roles",
+        args: [textResource(this.config.ensName, "research.lastReport"), this.config.account.address],
+      }),
+      this.publicClient.readContract({
+        address: resolver,
+        abi: resolverAbi,
+        functionName: "hasRootRoles",
+        args: [ROLE_SET_TEXT, this.config.account.address],
+      }),
+    ]);
+
     return {
-      "text.research.status.configured": true,
-      "text.research.status.writeProven": this.statusWriteProven,
-      "transfer": false,
-      "resolver.change": false,
-      "owner.change": false,
+      "text.research.status": (statusRoles & ROLE_SET_TEXT) === ROLE_SET_TEXT,
+      "text.research.lastReport": (reportRoles & ROLE_SET_TEXT) === ROLE_SET_TEXT,
+      "text.root": rootText,
     };
   }
 
   private async readText(key: string): Promise<string> {
-    return this.publicClient.readContract({
-      address: this.config.resolverAddress,
-      abi: resolverAbi,
-      functionName: "text",
-      args: [namehash(this.config.ensName), key],
-    });
+    return (await this.publicClient.getEnsText({
+      name: normalize(this.config.ensName),
+      key,
+    })) ?? "";
   }
 
   async getBudgetCap(): Promise<number | null> {
@@ -93,33 +156,33 @@ export class ENSIdentityProvider implements AgentIdentity {
     reportHash?: string,
   ): Promise<{ success: boolean; txHash?: string; error?: string }> {
     try {
-      const node = namehash(this.config.ensName);
-      const txHash = await this.walletClient.writeContract({
-        address: this.config.resolverAddress,
-        abi: resolverAbi,
-        functionName: "setText",
-        args: [node, "research.status", status],
-      });
-      const receipt = await this.publicClient.waitForTransactionReceipt({ hash: txHash });
-      if (receipt.status !== "success") {
-        return { success: false, txHash, error: "ENSv2 status transaction reverted" };
-      }
-      this.statusWriteProven = true;
-
+      const resolver = await this.resolverAddress();
+      const node = namehash(normalize(this.config.ensName));
+      const calls = [
+        encodeFunctionData({
+          abi: resolverAbi,
+          functionName: "setText",
+          args: [node, "research.status", status],
+        }),
+      ];
       if (reportHash) {
-        const reportTx = await this.walletClient.writeContract({
-          address: this.config.resolverAddress,
+        calls.push(encodeFunctionData({
           abi: resolverAbi,
           functionName: "setText",
           args: [node, "research.lastReport", reportHash],
-        });
-        const reportReceipt = await this.publicClient.waitForTransactionReceipt({ hash: reportTx });
-        if (reportReceipt.status !== "success") {
-          return { success: false, txHash: reportTx, error: "ENSv2 report transaction reverted" };
-        }
+        }));
       }
 
-      return { success: true, txHash };
+      const txHash = await this.wallet().writeContract({
+        address: resolver,
+        abi: resolverAbi,
+        functionName: "multicall",
+        args: [calls],
+      });
+      const receipt = await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+      return receipt.status === "success"
+        ? { success: true, txHash }
+        : { success: false, txHash, error: "ENSv2 status transaction reverted" };
     } catch (error) {
       return {
         success: false,
@@ -129,25 +192,21 @@ export class ENSIdentityProvider implements AgentIdentity {
   }
 
   async attemptUnauthorizedWrite(): Promise<{ success: boolean; error?: string }> {
-    if (!this.config.unauthorizedPrivateKey) {
-      return { success: false, error: "ENS_UNAUTHORIZED_PRIVATE_KEY is required for a real denial test" };
+    if (!this.config.unauthorizedAccount) {
+      return { success: false, error: "An ENS unauthorized test wallet is required for a real denial test" };
     }
     try {
-      const unauthorized = privateKeyToAccount(this.config.unauthorizedPrivateKey);
-      const client = createWalletClient({
-        account: unauthorized,
-        chain: sepolia,
-        transport: http(this.config.rpcUrl),
-      });
-      const txHash = await client.writeContract({
-        address: this.config.resolverAddress,
+      const resolver = await this.resolverAddress();
+      const txHash = await this.wallet(this.config.unauthorizedAccount).writeContract({
+        address: resolver,
         abi: resolverAbi,
         functionName: "setText",
-        args: [namehash(this.config.ensName), "research.status", "unauthorized"],
+        args: [namehash(normalize(this.config.ensName)), "research.status", "unauthorized"],
+        gas: 200_000n,
       });
       const receipt = await this.publicClient.waitForTransactionReceipt({ hash: txHash });
       return receipt.status === "reverted"
-        ? { success: false, error: `Unauthorized ENSv2 write reverted (${txHash})` }
+        ? { success: false, error: `Unauthorized ENSv2 write reverted on-chain (${txHash})` }
         : { success: true, error: `SECURITY FAILURE: unauthorized write succeeded (${txHash})` };
     } catch (error) {
       return {
@@ -170,27 +229,42 @@ function requiredEnv(name: string): string {
   return value;
 }
 
-export function createENSIdentity(_projectName?: string, budget = 0.5): ENSIdentityProvider {
-  const ensName = requiredEnv("ENS_AGENT_NAME");
-  const resolverAddress = requiredEnv("ENS_PERMISSIONED_RESOLVER_ADDRESS");
-  const privateKey = requiredEnv("ENS_AGENT_PRIVATE_KEY");
-  if (!/^0x[0-9a-fA-F]{40}$/.test(resolverAddress)) {
-    throw new Error("ENS_PERMISSIONED_RESOLVER_ADDRESS must be a valid EVM address");
+function localAccount(name: string): Account | undefined {
+  const key = process.env[name];
+  if (!key) return undefined;
+  if (!/^0x[0-9a-fA-F]{64}$/.test(key)) throw new Error(`${name} must be a 32-byte EVM private key`);
+  return privateKeyToAccount(key as Hex);
+}
+
+function privyAccount(walletIdName: string, addressName: string): Account | undefined {
+  const walletId = process.env[walletIdName];
+  const address = process.env[addressName];
+  if (!walletId && !address) return undefined;
+  if (!walletId || !address || !/^0x[0-9a-fA-F]{40}$/.test(address)) {
+    throw new Error(`${walletIdName} and a valid ${addressName} must both be set`);
   }
-  if (!/^0x[0-9a-fA-F]{64}$/.test(privateKey)) {
-    throw new Error("ENS_AGENT_PRIVATE_KEY must be a 32-byte EVM private key");
+  const privy = new PrivyClient({
+    appId: requiredEnv("NEXT_PUBLIC_PRIVY_APP_ID"),
+    appSecret: requiredEnv("PRIVY_APP_SECRET"),
+  });
+  return createViemAccount(privy, { walletId, address: address as Address });
+}
+
+export function createENSIdentity(_projectName?: string, _budget = 0.5): ENSIdentityProvider {
+  const account = privyAccount("ENS_AGENT_PRIVY_WALLET_ID", "ENS_AGENT_WALLET_ADDRESS")
+    ?? localAccount("ENS_AGENT_PRIVATE_KEY");
+  if (!account) {
+    throw new Error("ENS agent wallet is required (Privy wallet ID/address or ENS_AGENT_PRIVATE_KEY)");
   }
-  const unauthorizedPrivateKey = process.env.ENS_UNAUTHORIZED_PRIVATE_KEY;
-  if (unauthorizedPrivateKey && !/^0x[0-9a-fA-F]{64}$/.test(unauthorizedPrivateKey)) {
-    throw new Error("ENS_UNAUTHORIZED_PRIVATE_KEY must be a 32-byte EVM private key");
-  }
+  const unauthorizedAccount = privyAccount(
+    "ENS_UNAUTHORIZED_PRIVY_WALLET_ID",
+    "ENS_UNAUTHORIZED_WALLET_ADDRESS",
+  ) ?? localAccount("ENS_UNAUTHORIZED_PRIVATE_KEY");
 
   return new ENSIdentityProvider({
-    ensName,
-    resolverAddress: resolverAddress as Address,
-    budgetCap: budget,
-    rpcUrl: process.env.ENS_SEPOLIA_RPC_URL ?? "https://rpc.sepolia.org",
-    privateKey: privateKey as Hex,
-    unauthorizedPrivateKey: unauthorizedPrivateKey as Hex | undefined,
+    ensName: requiredEnv("ENS_AGENT_NAME"),
+    rpcUrl: process.env.ENS_SEPOLIA_RPC_URL ?? "https://sepolia.gateway.tenderly.co",
+    account,
+    unauthorizedAccount,
   });
 }

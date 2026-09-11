@@ -46,9 +46,14 @@ export function EvidencePanel({
         )}
 
         {source.txRef && (
-          <p className="mt-4 font-mono text-xs break-all text-ink/60">
-            Tx: {source.txRef}
-          </p>
+          <a
+            className="mt-4 inline-block font-mono text-xs break-all text-signal underline"
+            href={`https://sepolia.basescan.org/tx/${source.txRef}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            View payment transaction: {source.txRef} ↗
+          </a>
         )}
 
         {source.data && (

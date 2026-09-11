@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { PaymentTimeline } from "./PaymentTimeline";
 import { UncertaintyPanel } from "./UncertaintyPanel";
 import { useScoutAuth } from "@/app/providers";
+import { PaymentProof } from "./PaymentProof";
 
 export function PaymentPanel({
   researchId,
@@ -23,6 +24,7 @@ export function PaymentPanel({
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState<"prompt" | "settled">("prompt");
   const [activeStep, setActiveStep] = useState(0);
+  const [completedSession, setCompletedSession] = useState<ResearchSession | null>(null);
   const { getAccessToken } = useScoutAuth();
 
   async function handleAuthorize() {
@@ -30,10 +32,10 @@ export function PaymentPanel({
     setActiveStep(2);
     try {
       setActiveStep(3);
-      await authorizePayment(researchId, await getAccessToken());
+      const completed = await authorizePayment(researchId, await getAccessToken());
+      setCompletedSession(completed);
       setPhase("settled");
       setActiveStep(5);
-      onComplete();
     } catch {
       setLoading(false);
     }
@@ -106,12 +108,13 @@ export function PaymentPanel({
             </div>
           </>
         ) : (
-          <Card shadow className="text-center space-y-4">
-            <p className="font-display text-2xl uppercase text-success">Payment Settled</p>
-            <p className="font-mono text-xl">${paymentPending.amount.toFixed(2)} USDC</p>
-            <p className="font-mono text-sm">x402 ✓</p>
+          <div className="space-y-5">
+            {completedSession?.paymentReceipt && (
+              <PaymentProof receipt={completedSession.paymentReceipt} />
+            )}
             <PaymentTimeline activeStep={5} />
-          </Card>
+            <Button onClick={onComplete} className="w-full">View completed report</Button>
+          </div>
         )}
       </div>
     </div>

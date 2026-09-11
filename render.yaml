@@ -1,0 +1,82 @@
+services:
+  - type: web
+    name: scout-api-ethglobal-2026
+    runtime: node
+    plan: free
+    region: oregon
+    branch: dev
+    autoDeploy: true
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start -w @scout/api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NPM_CONFIG_INCLUDE
+        value: dev
+      - key: PUBLIC_API_URL
+        value: https://scout-api-ethglobal-2026.onrender.com
+      - key: DEEP_ANALYSIS_URL
+        value: https://scout-api-ethglobal-2026.onrender.com/api/deep-protocol-analysis
+      - key: OPENROUTER_MODEL
+        value: nex-agi/nex-n2.5-mini:free
+      - key: OPENROUTER_BASE_URL
+        value: https://openrouter.ai/api/v1
+      - key: OPENROUTER_SITE_URL
+        value: https://scout-web-ethglobal-2026.onrender.com
+      - key: OPENROUTER_SITE_NAME
+        value: Scout
+      - key: X402_FACILITATOR_URL
+        value: https://x402.org/facilitator
+      - key: BASE_SEPOLIA_RPC_URL
+        value: https://sepolia.base.org
+      - key: ENS_SEPOLIA_RPC_URL
+        value: https://sepolia.gateway.tenderly.co
+      - key: ENS_AGENT_NAME
+        value: scout-agent.eth
+      - key: PRIVY_REQUIRE_AUTH
+        value: "false"
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: GRAPH_GATEWAY_API_KEY
+        sync: false
+      - key: OPENSEO_API_KEY
+        sync: false
+      - key: X402_PAY_TO_ADDRESS
+        sync: false
+      - key: NEXT_PUBLIC_PRIVY_APP_ID
+        sync: false
+      - key: PRIVY_APP_SECRET
+        sync: false
+      - key: PRIVY_WALLET_ID
+        sync: false
+      - key: PRIVY_POLICY_ID
+        sync: false
+      - key: ENS_AGENT_PRIVY_WALLET_ID
+        sync: false
+      - key: ENS_AGENT_WALLET_ADDRESS
+        sync: false
+      - key: ENS_UNAUTHORIZED_PRIVY_WALLET_ID
+        sync: false
+      - key: ENS_UNAUTHORIZED_WALLET_ADDRESS
+        sync: false
+
+  - type: web
+    name: scout-web-ethglobal-2026
+    runtime: node
+    plan: free
+    region: oregon
+    branch: dev
+    autoDeploy: true
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start -w @scout/web -- --hostname 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NPM_CONFIG_INCLUDE
+        value: dev
+      - key: NEXT_PUBLIC_API_URL
+        value: https://scout-api-ethglobal-2026.onrender.com
+      - key: NEXT_PUBLIC_PRIVY_APP_ID
+        sync: false

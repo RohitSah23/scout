@@ -94,9 +94,21 @@ export function BudgetDrawer({
               {session.sources
                 .filter((s) => s.cost > 0)
                 .map((s) => (
-                  <div key={s.id} className="flex justify-between">
-                    <span>{s.name}</span>
-                    <span className="text-signal">− ${s.cost.toFixed(2)}</span>
+                  <div key={s.id} className="border-b border-ink/10 pb-2">
+                    <div className="flex justify-between">
+                      <span>{s.name}</span>
+                      <span className="text-signal">− ${s.cost.toFixed(2)}</span>
+                    </div>
+                    {s.txRef && (
+                      <a
+                        href={`https://sepolia.basescan.org/tx/${s.txRef}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1 block text-signal underline"
+                      >
+                        Transaction ↗
+                      </a>
+                    )}
                   </div>
                 ))}
             </div>

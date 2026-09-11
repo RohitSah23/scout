@@ -26,7 +26,8 @@ import type { DecisionLogEntry, ResearchSession } from "@scout/schemas";
 import { emitLog, getSession, listSessions, saveSession, subscribeToLogs } from "./store.js";
 
 const app = new Hono();
-const PORT = parseInt(process.env.API_PORT ?? "3001", 10);
+// Render injects PORT for web services; API_PORT remains the local-development fallback.
+const PORT = parseInt(process.env.PORT ?? process.env.API_PORT ?? "3001", 10);
 const requirePrivyAuth = process.env.PRIVY_REQUIRE_AUTH === "true";
 
 async function verifyPrivyRequest(authorization?: string): Promise<string | undefined> {
@@ -485,5 +486,5 @@ app.get("/openapi.json", (c) =>
 
 app.all("/mcp", (c) => mcpTransport.handleRequest(c.req.raw));
 
-console.log(`Scout API listening on http://localhost:${PORT}`);
-serve({ fetch: app.fetch, port: PORT });
+console.log(`Scout API listening on http://0.0.0.0:${PORT}`);
+serve({ fetch: app.fetch, port: PORT, hostname: "0.0.0.0" });

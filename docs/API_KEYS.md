@@ -112,18 +112,19 @@ flowchart LR
 
 ## 6. ENSv2 Sepolia
 
-**Vars:** `ENS_SEPOLIA_RPC_URL`, `ENS_AGENT_PRIVATE_KEY`, `ENS_AGENT_NAME`, `ENS_PERMISSIONED_RESOLVER_ADDRESS`, `ENS_UNAUTHORIZED_PRIVATE_KEY`
+**Vars:** `ENS_SEPOLIA_RPC_URL`, `ENS_AGENT_NAME`, and either Privy ENS wallet IDs/addresses or local ENS private keys
 
 | Variable | Where to get it |
 |----------|-----------------|
-| `ENS_SEPOLIA_RPC_URL` | Default `https://rpc.sepolia.org` works; or use Alchemy/Infura Sepolia RPC |
+| `ENS_SEPOLIA_RPC_URL` | Defaults to a public Ethereum Sepolia RPC; use Alchemy/Infura for production reliability |
 | `ENS_DEPLOYER_PRIVATE_KEY` | Private key of a wallet with Sepolia ETH (for registering parent names) |
 | `ENS_AGENT_PRIVATE_KEY` | Private key of the agent's wallet (for writing research status records) |
 | `ENS_PARENT_NAME` | An ENS name you own on Sepolia (e.g. `scout.eth`) — register at [Sepolia ENS App](https://sepolia.app.ens.domains) |
+| `ENS_*_PRIVY_WALLET_ID` / `ENS_*_WALLET_ADDRESS` | Preferred: generated with `npm run provision:ens-wallets`; keeps ENS keys inside Privy |
 
 **Docs:** [ENSv2 overview](https://docs.ens.domains/ensv2/overview), [App developers tutorial](https://docs.ens.domains/ensv2/tutorial-app-developers/)
 
-**Used by:** `packages/ens/src/index.ts` — performs direct Sepolia resolver reads/writes and returns an explicit configuration error when required values are missing. You do **not** deploy ENS protocol contracts yourself; they are already on Sepolia.
+**Used by:** `packages/ens/src/index.ts` — discovers the current resolver through ENS on every write, verifies forward resolution, reads actual EAC roles, and performs authorized and deliberately reverted unauthorized Sepolia transactions.
 
 **Sepolia ETH:** Use any Sepolia faucet. Registration fees on Sepolia use free `MockUSDC` (mintable on-chain).
 
