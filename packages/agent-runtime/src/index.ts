@@ -371,10 +371,27 @@ export async function authorizePaymentAndComplete(
   if (!recipient) throw new Error("X402_PAY_TO_ADDRESS is required");
   if (!opts.deepAnalysisUrl) throw new Error("DEEP_ANALYSIS_URL is required");
 
+  let ensBudgetCap: number | null | undefined;
+  if (process.env.ENS_AGENT_NAME) {
+    const ens = createENSIdentity(session.chain ?? "base", session.budget.initial);
+    ensBudgetCap = await ens.getBudgetCap();
+    if (ensBudgetCap === null) {
+      throw new Error("ENSv2 research.budget is missing or invalid");
+    }
+    emit(
+      runtime,
+      `ENSv2 treasury cap resolved from ${await ens.resolveName()}: $${ensBudgetCap.toFixed(2)} USDC.`,
+      "success",
+      undefined,
+      { ensName: process.env.ENS_AGENT_NAME, ensBudgetCap },
+    );
+  }
+
   const policy = createDefaultPolicy(
     recipients,
     session.budget.initial,
     session.budget.spent,
+    ensBudgetCap,
   );
   const wallet = new PrivyX402PaymentProvider({
     ...policy,

@@ -59,7 +59,7 @@ if (!ensName.endsWith(".eth") || ensName.split(".").length !== 2) {
   throw new Error("ENS_AGENT_NAME must be a second-level .eth name");
 }
 const label = ensName.slice(0, -4);
-const rpcUrl = process.env.ENS_SEPOLIA_RPC_URL ?? "https://ethereum-sepolia-rpc.publicnode.com";
+const rpcUrl = process.env.ENS_SEPOLIA_RPC_URL ?? "https://sepolia.gateway.tenderly.co";
 const privy = new PrivyClient({ appId, appSecret });
 const publicClient = createPublicClient({ chain: sepolia, transport: http(rpcUrl) });
 

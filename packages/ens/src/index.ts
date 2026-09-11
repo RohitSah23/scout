@@ -263,7 +263,7 @@ export function createENSIdentity(_projectName?: string, _budget = 0.5): ENSIden
 
   return new ENSIdentityProvider({
     ensName: requiredEnv("ENS_AGENT_NAME"),
-    rpcUrl: process.env.ENS_SEPOLIA_RPC_URL ?? "https://ethereum-sepolia-rpc.publicnode.com",
+    rpcUrl: process.env.ENS_SEPOLIA_RPC_URL ?? "https://sepolia.gateway.tenderly.co",
     account,
     unauthorizedAccount,
   });

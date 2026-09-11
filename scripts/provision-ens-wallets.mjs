@@ -9,7 +9,7 @@ if (!appId || !appSecret) {
 }
 
 const privy = new PrivyClient({ appId, appSecret });
-const rpc = process.env.ENS_SEPOLIA_RPC_URL ?? "https://ethereum-sepolia-rpc.publicnode.com";
+const rpc = process.env.ENS_SEPOLIA_RPC_URL ?? "https://sepolia.gateway.tenderly.co";
 const publicClient = createPublicClient({ chain: sepolia, transport: http(rpc) });
 
 async function ensureWallet(existingId, displayName, externalId) {

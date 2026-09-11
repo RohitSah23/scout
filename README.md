@@ -82,6 +82,77 @@ scout/
 
 ---
 
+## ✅ Verified Live Hackathon Proof
+
+All proof below was produced by real APIs and public testnet transactions on September 11, 2026. Scout has no simulated settlement or synthetic ENS receipt path.
+
+### Network separation
+
+| Flow | Network | Purpose |
+|---|---|---|
+| Privy + x402 | Base Sepolia (chain 84532) | Policy-controlled USDC payment for paid research |
+| ENSv2 | Ethereum Sepolia (chain 11155111) | Agent identity, records and Enhanced Access Control |
+
+Base Sepolia ETH/USDC cannot be treated as Ethereum Sepolia gas; the two proof flows use separate wallets and explorers.
+
+### The Graph — composable standardized data
+
+The same [LENDING_QUERY_TEMPLATE](packages/graph/src/queries.ts) runs against five Messari Lending/CDP deployments on Base:
+
+| Protocol | Graph subgraph/deployment ID | Schema |
+|---|---|---|
+| Moonwell | 33ex1ExmYQtwGVwri1AP3oMFPGSce6YbocBP7fWbsBrg | Messari Lending/CDP 2.0.1 |
+| Seamless Protocol | 2u4mWUV4xS19ef1MbnxZHWLLMwdPxtVifH46JbonXwXP | Messari Lending/CDP 3.1.0 |
+| Compound V3 | AwoxEZbiWLvv6e3QdvdMZw4WDURdGbvPfHmZRc8Dpfz9 | Messari Lending/CDP 3.1.0 |
+| QiDao | 9NHJ9k31qaGCYXppm9isJTiEoiB6v3tJDnR6SrQrxcjw | Messari Lending/CDP 1.3.0 |
+| Aave V3 | D7mapexM5ZsQckLJai2FawTKXJ7CqYGKM8PErnS3cJi9 | Messari Lending/CDP 3.1.0 |
+
+A separate Aave V3 native subgraph (GQFbb95cE6d8mV989mL5figjaGaKCQB3xqYrr1bRyXqF, deployment QmXZ53Kzz3L2LvvbGve2ebtLKWMhjjB1a3U2jnUj2YwGCW) supplies one-hour event-level trending data. The verified paid run evaluated 16 token/market candidates from 20 initial sources and selected cbBTC on Aave V3 with opportunity score 53.7 and risk score 30.
+
+### Privy + x402 — real financial flow
+
+| Proof | Value |
+|---|---|
+| Privy policy-controlled payer | [0x38B28037192d6b44B537c2c6F717f150a1989E69](https://sepolia.basescan.org/address/0x38B28037192d6b44B537c2c6F717f150a1989E69) |
+| Attached Privy policy ID | eebmveuo1rtadd1pua6vll2x |
+| Policy boundary | Base Sepolia USDC EIP-3009 only; allowlisted payee; maximum 0.10 USDC |
+| Payee | [0xb92fe771ed8233e5198bf3e61f2f811d90bd524c](https://sepolia.basescan.org/address/0xb92fe771ed8233e5198bf3e61f2f811d90bd524c) |
+| Wallet funding swap | [0x7c771bbf…beff1](https://sepolia.basescan.org/tx/0x7c771bbf6b70ea8b2e3ef229344f924b3bd7ac869462c09f68ef2ccfaf3beff1) — real Uniswap v3 conversion to test USDC |
+| x402 settlement | [0xb66194b3…df537](https://sepolia.basescan.org/tx/0xb66194b37432059c1fba839d66e924281ed5984a5580c6ca2d9ad342a11df537) — 0.03 USDC |
+
+The final research session and UI preserve the payer, payee, amount, network, policy ID, service URL, timestamp, settlement hash and Basescan link in a structured payment receipt.
+
+### ENSv2 — identity and scoped EAC
+
+| Proof | Value |
+|---|---|
+| ENS identity | scout-agent.eth |
+| Owner/admin Privy wallet | [0x086f394bDBcD662dC2B1b467D7984827D39881bD](https://sepolia.etherscan.io/address/0x086f394bDBcD662dC2B1b467D7984827D39881bD) |
+| Scoped agent Privy wallet / resolved address | [0x9BCBB965C4886dDc4ab769f6141a1Ea26a593eaE](https://sepolia.etherscan.io/address/0x9BCBB965C4886dDc4ab769f6141a1Ea26a593eaE) |
+| Unauthorized test Privy wallet | [0x2804EA295DB26Fa81099D2326974D400D62d5413](https://sepolia.etherscan.io/address/0x2804EA295DB26Fa81099D2326974D400D62d5413) |
+| Permissioned Resolver proxy | [0x846e68ecd4fEe028C776bf5642D242De762b9dbd](https://sepolia.etherscan.io/address/0x846e68ecd4fEe028C776bf5642D242De762b9dbd) |
+
+Real ENSv2 transaction sequence:
+
+1. [Resolver proxy deployment](https://sepolia.etherscan.io/tx/0x191648c90c3b4ca18aa610cccf69fff12e4908b9e5eafcc24b1e6d3f8bdd3cfc) through the official Verifiable Factory.
+2. [MockUSDC mint](https://sepolia.etherscan.io/tx/0x38f83f35e145b493f4a91dced51c4c7e8765e91378977105f7d0aa470b4ba6bc) and [registrar approval](https://sepolia.etherscan.io/tx/0xdf98999be3c63852da3b0b30225258d713525fdc96a191e267fa5b707ab48f93).
+3. [Commit](https://sepolia.etherscan.io/tx/0xd191da835718dfa44e90088037361a296b6563cbcc5fe8475331ea3f195d5c5e) and, after the mandatory reveal delay, [register scout-agent.eth](https://sepolia.etherscan.io/tx/0x083ac4693d6b38c3052b8e6b20107c55d1b8281dee8cb457cde1934773174231).
+4. [Initialize address/identity records and delegate EAC roles](https://sepolia.etherscan.io/tx/0x5cc3ec6dfc7cbcdc2c5e67d06068e6306c43391aacd4ed825ba0ba8467de6f8d).
+5. [Scoped agent write succeeds](https://sepolia.etherscan.io/tx/0x2b65dbcf1de552eb8c31ad20d39a84107d6c59fe0b85f572c36461b8a1a0235b).
+6. [Unauthorized write is mined and reverts](https://sepolia.etherscan.io/tx/0xebc0c9435af2af0c1146d28b03b526082dd50b3c0556709254f95ae0fec2f831).
+
+Verified resolver state:
+
+- addr(scout-agent.eth) = 0x9BCBB965C4886dDc4ab769f6141a1Ea26a593eaE
+- agent.type = autonomous-research
+- research.budget = 0.50
+- research.status = ready
+- research.lastReport = provisioning-proof
+- Agent holds record-specific ROLE_SET_TEXT for research.status and research.lastReport
+- Agent does not hold root-level text permission
+
+Scout discovers the current resolver before every write, verifies forward resolution, reads actual EAC bitmaps, and resolves research.budget before authorizing an x402 purchase. ENS is therefore an enforced runtime control, not decorative metadata.
+
 ## 🚀 Quick Start & Initialization
 
 ### 1. Prerequisites
@@ -93,7 +164,7 @@ scout/
 Clone the repository and install all monorepo dependencies:
 
 ```bash
-git clone https://github.com/RohitSah23/scout.git
+git clone https://github.com/8dazo/scout.git
 cd scout
 npm install
 ```
@@ -144,7 +215,7 @@ node apps/agent/dist/index.js "Analyze lending protocols on Base. Best developer
 | **The Graph** | Live onchain protocol discovery & Messari standardized lending/CDP subgraphs (*"1 query × N protocols"*); each protocol query fetches **top 5 markets** (`inputToken`, TVL, 7d snapshots) and flattens into a **cross-protocol token leaderboard** (Aave uses native 1h trending) | [`packages/graph`](packages/graph) |
 | **OpenSEO** | Internet/search intelligence, keyword search volume, SERP rankings, and competitor gap metrics | [`packages/openseo`](packages/openseo) |
 | **x402** | Machine-native HTTP 402 payment flow for deep analysis reports ($0.03 USDC on Base Sepolia) | [`packages/x402`](packages/x402) |
-| **ENSv2** | Onchain agent identity (`scout.<project>.eth`), Permissioned Resolver & Enhanced Access Control | [`packages/ens`](packages/ens) |
+| **ENSv2** | Onchain agent identity (scout-agent.eth), Permissioned Resolver, record-scoped Enhanced Access Control, and onchain treasury cap | [`packages/ens`](packages/ens) |
 | **Privy** | Organization treasury embedded wallet, spending policies (per-tx caps, domain allowlists) | [`packages/privy`](packages/privy) |
 | **Bazantic** | Gateway manifest & reusable recipes exposing Scout's intelligence to downstream autonomous agents | [`packages/bazantic`](packages/bazantic) |
 | **Hedera** | Fallback consensus & verifiable audit trail integration | [`packages/hedera`](packages/hedera) |

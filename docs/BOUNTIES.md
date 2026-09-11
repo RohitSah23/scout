@@ -22,7 +22,8 @@ The detailed, cited status and production checklist is in [ETHONLINE_2026_READIN
 - [x] Restricted Privy wallet policy provisioning script
 - [x] Privy-managed signer wired to x402 client
 - [x] Create/fund wallet and complete a real settled payment
-- [ ] Show wallet, policy, receipt and explorer link in demo
+- [x] Show wallet, policy, receipt and explorer link in the product UI
+- [ ] Record the proof in the demo video
 
 Verified settlement: [0xb66194…df537](https://sepolia.basescan.org/tx/0xb66194b37432059c1fba839d66e924281ed5984a5580c6ca2d9ad342a11df537), `0.03 USDC` on Base Sepolia.
 
@@ -36,10 +37,11 @@ Verified settlement: [0xb66194…df537](https://sepolia.basescan.org/tx/0xb66194
 
 ### ENS — Best Use of ENSv2 — $4,500
 - [x] Real Sepolia resolver read/write implementation; no simulated fallback
-- [ ] Provision name and Permissioned Resolver
-- [ ] Grant scoped EAC permissions
-- [ ] Capture successful and unauthorized-revert transactions
-- [ ] Make ENS resolution a runtime dependency
+- [x] Provision scout-agent.eth and a per-owner Permissioned Resolver
+- [x] Grant record-scoped EAC permissions
+- [x] Capture successful and unauthorized-revert transactions
+- [x] Make ENS resolution and research.budget a payment runtime dependency
+- [ ] Record the proof in the demo video
 
 ## Do not target
 
