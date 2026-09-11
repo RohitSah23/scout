@@ -6,8 +6,8 @@
 4. **1:10 OpenSEO** — Search gap vs on-chain growth
 5. **1:35 Score** — Uncertainty gate triggers x402
 6. **1:50 Payment** — 402 → Privy sign → settled
-7. **2:10 ENS** — scout.ethonline.eth + permission summary + status write
-8. **2:30 Result** — Score 88, risk 34, spend report
+7. **2:10 ENS** — scout-agent.eth + permission summary + public MCP record
+8. **2:30 Result** — cbBTC on Aave V3, opportunity 53.7, risk 30, spend report
 9. **3:10 Close** — One-liner for judges
 
 ## Demo prompt
@@ -28,3 +28,5 @@ Scout discovers Moonwell, Seamless, Aave, and QiDao on Base. One Messari query t
 - 402 response headers
 - Privy policy chips + spend tx
 - ENS Sepolia success transaction and unauthorized-write revert
+- ENS `agent.mcp` readback and [public MCP update transaction](https://sepolia.etherscan.io/tx/0x968cc1b7fc77a268815be40e55d2d197b11ebdcbb1015f88216c904467e22665)
+- Public app: <https://scout-web-ethglobal-2026.onrender.com>

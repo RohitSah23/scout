@@ -86,6 +86,18 @@ scout/
 
 All proof below was produced by real APIs and public testnet transactions on September 11, 2026. Scout has no simulated settlement or synthetic ENS receipt path.
 
+### Public production deployment
+
+| Surface | Public endpoint | Verification |
+|---|---|---|
+| Web dashboard | [scout-web-ethglobal-2026.onrender.com](https://scout-web-ethglobal-2026.onrender.com) | Render service is live; production Next.js UI loads and Privy becomes ready |
+| API health | [`/health`](https://scout-api-ethglobal-2026.onrender.com/health) | Returns `{"ok":true,"service":"scout-api"}` |
+| Agent identity | [`/agent/identity`](https://scout-api-ethglobal-2026.onrender.com/agent/identity) | Resolves `scout-agent.eth`, EAC permissions, records and the onchain budget |
+| MCP server | [`/mcp`](https://scout-api-ethglobal-2026.onrender.com/mcp) | Stateless Streamable HTTP MCP server exposing `protocol_opportunity_analysis` |
+| OpenAPI | [`/openapi.json`](https://scout-api-ethglobal-2026.onrender.com/openapi.json) | Machine-readable research and x402 service contract |
+
+Both Render services deploy from the public `dev` branch. The versioned [`render.yaml`](render.yaml) contains the complete two-service topology while credentials remain only in Render's encrypted environment.
+
 ### Network separation
 
 | Flow | Network | Purpose |
@@ -140,6 +152,7 @@ Real ENSv2 transaction sequence:
 4. [Initialize address/identity records and delegate EAC roles](https://sepolia.etherscan.io/tx/0x5cc3ec6dfc7cbcdc2c5e67d06068e6306c43391aacd4ed825ba0ba8467de6f8d).
 5. [Scoped agent write succeeds](https://sepolia.etherscan.io/tx/0x2b65dbcf1de552eb8c31ad20d39a84107d6c59fe0b85f572c36461b8a1a0235b).
 6. [Unauthorized write is mined and reverts](https://sepolia.etherscan.io/tx/0xebc0c9435af2af0c1146d28b03b526082dd50b3c0556709254f95ae0fec2f831).
+7. [Production MCP record update](https://sepolia.etherscan.io/tx/0x968cc1b7fc77a268815be40e55d2d197b11ebdcbb1015f88216c904467e22665) sets `agent.mcp` to `https://scout-api-ethglobal-2026.onrender.com/mcp`.
 
 Verified resolver state:
 
@@ -148,6 +161,7 @@ Verified resolver state:
 - research.budget = 0.50
 - research.status = ready
 - research.lastReport = provisioning-proof
+- agent.mcp = https://scout-api-ethglobal-2026.onrender.com/mcp
 - Agent holds record-specific ROLE_SET_TEXT for research.status and research.lastReport
 - Agent does not hold root-level text permission
 

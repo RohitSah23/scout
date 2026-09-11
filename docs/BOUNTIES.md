@@ -8,14 +8,16 @@ The detailed, cited status and production checklist is in [ETHONLINE_2026_READIN
 - [x] Live Graph gateway data
 - [x] Messari Lending/CDP shared query across multiple protocols
 - [x] Standards leverage documented
-- [ ] Public deployment and 2–4 minute video
+- [x] Public deployment
+- [ ] 2–4 minute video
 
 ### The Graph — Best AI Tooling or AI Use Case (From Scratch) — $5,000
 - [x] Graph data is load-bearing
 - [x] Meaningful scoring, decisions, uncertainty gate and natural-language output
 - [x] Real Streamable HTTP MCP tool
 - [x] Agent `SKILL.md`
-- [ ] Public deployment and 2–4 minute video
+- [x] Public deployment
+- [ ] 2–4 minute video
 
 ### Privy — Best financial flow — $2,500
 - [x] Privy login and server-side access-token verification
