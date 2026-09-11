@@ -14,15 +14,17 @@ The detailed, cited status and production checklist is in [ETHONLINE_2026_READIN
 - [x] Graph data is load-bearing
 - [x] Meaningful scoring, decisions, uncertainty gate and natural-language output
 - [x] Real Streamable HTTP MCP tool
-- [ ] Agent `SKILL.md`
+- [x] Agent `SKILL.md`
 - [ ] Public deployment and 2–4 minute video
 
-### Privy — Best B2B financial product — $2,500
+### Privy — Best financial flow — $2,500
 - [x] Privy login and server-side access-token verification
 - [x] Restricted Privy wallet policy provisioning script
 - [x] Privy-managed signer wired to x402 client
-- [ ] Create/fund wallet and complete a real settled payment
+- [x] Create/fund wallet and complete a real settled payment
 - [ ] Show wallet, policy, receipt and explorer link in demo
+
+Verified settlement: [0xb66194…df537](https://sepolia.basescan.org/tx/0xb66194b37432059c1fba839d66e924281ed5984a5580c6ca2d9ad342a11df537), `0.03 USDC` on Base Sepolia.
 
 ## Secondary targets
 
