@@ -403,21 +403,45 @@ export async function authorizePaymentAndComplete(
     throw new Error(payResult.error ?? "Payment failed");
   }
 
+  const paidData = payResult.data as
+    | {
+        resource?: DeepAnalysisResult;
+        wallet?: { id?: string; address?: string };
+        policyId?: string;
+      }
+    | undefined;
+  const payer = paidData?.wallet?.address;
+  const policyId = paidData?.policyId;
+  const txHash = payResult.txRef;
+  if (!payer || !policyId || !txHash) {
+    throw new Error("Payment settled without a complete Privy policy receipt");
+  }
+
+  session.paymentReceipt = {
+    amount: DEEP_ANALYSIS_PRICE_USD,
+    currency: "USDC",
+    payer,
+    payee: recipient,
+    policyId,
+    network: "Base Sepolia",
+    txHash,
+    explorerUrl: `https://sepolia.basescan.org/tx/${txHash}`,
+    serviceUrl: opts.deepAnalysisUrl,
+    settledAt: new Date().toISOString(),
+  };
+  session.agent.wallet = payer;
+
   emit(
     runtime,
-    `Payment settled from a policy-controlled Privy wallet (${payResult.txRef}).`,
+    `Payment settled from a policy-controlled Privy wallet (${txHash}).`,
     "success",
     "payment.settled",
-    {
-      amount: DEEP_ANALYSIS_PRICE_USD,
-      txRef: payResult.txRef,
-    },
+    session.paymentReceipt,
   );
 
   session.budget.spent = Math.round((session.budget.spent + DEEP_ANALYSIS_PRICE_USD) * 100) / 100;
   session.budget.remaining = Math.round((session.budget.initial - session.budget.spent) * 100) / 100;
 
-  const paidData = payResult.data as { resource?: DeepAnalysisResult } | undefined;
   const deep = paidData?.resource;
   if (!deep || deep.protocol !== targetProtocol) {
     throw new Error("Paid service returned an invalid deep-analysis payload");

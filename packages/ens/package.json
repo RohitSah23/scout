@@ -7,6 +7,6 @@
   "types": "./dist/index.d.ts",
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
   "scripts": { "build": "tsc", "dev": "tsc --watch" },
-  "dependencies": { "@scout/schemas": "*", "viem": "^2.21.54" },
+  "dependencies": { "@privy-io/node": "^0.34.0", "@scout/schemas": "*", "viem": "^2.21.54" },
   "devDependencies": { "typescript": "^5.7.2" }
 }

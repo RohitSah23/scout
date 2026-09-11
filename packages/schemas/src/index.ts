@@ -203,6 +203,21 @@ export const PaymentPendingSchema = z.object({
 
 export type PaymentPending = z.infer<typeof PaymentPendingSchema>;
 
+export const PaymentReceiptSchema = z.object({
+  amount: z.number(),
+  currency: z.literal("USDC"),
+  payer: z.string(),
+  payee: z.string(),
+  policyId: z.string(),
+  network: z.literal("Base Sepolia"),
+  txHash: z.string(),
+  explorerUrl: z.string().url(),
+  serviceUrl: z.string().url(),
+  settledAt: z.string(),
+});
+
+export type PaymentReceipt = z.infer<typeof PaymentReceiptSchema>;
+
 export const ResearchSessionSchema = z.object({
   researchId: z.string(),
   status: z.enum(["pending", "running", "awaiting_payment", "completed", "failed"]),
@@ -222,6 +237,7 @@ export const ResearchSessionSchema = z.object({
   recommendation: RecommendationSchema.optional(),
   confidence: z.number().optional(),
   paymentPending: PaymentPendingSchema.optional(),
+  paymentReceipt: PaymentReceiptSchema.optional(),
   decisionLog: z.array(DecisionLogEntrySchema),
   createdAt: z.string(),
   updatedAt: z.string(),

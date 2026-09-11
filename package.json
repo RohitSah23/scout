@@ -11,7 +11,9 @@
     "dev": "turbo run dev --parallel",
     "test": "turbo run test",
     "lint": "turbo run lint",
-    "provision:privy": "node --env-file=.env scripts/provision-privy.mjs"
+    "provision:privy": "node --env-file=.env scripts/provision-privy.mjs",
+    "provision:ens-wallets": "node --env-file=.env scripts/provision-ens-wallets.mjs",
+    "provision:ens": "node --env-file=.env scripts/provision-ens.mjs"
   },
   "devDependencies": {
     "turbo": "^2.3.3",
