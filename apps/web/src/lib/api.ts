@@ -22,10 +22,13 @@ export async function startResearch(body: {
   budget?: number;
   chain?: string;
   category?: string;
-}): Promise<{ researchId: string; status: string }> {
+}, accessToken?: string | null): Promise<{ researchId: string; status: string }> {
   const res = await fetch(`${API_URL}/research`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error("Failed to start research");
@@ -46,14 +49,20 @@ export async function fetchReports(status?: string): Promise<ResearchListItem[]>
   return data.sessions;
 }
 
-export async function authorizePayment(id: string): Promise<ResearchSession> {
-  const res = await fetch(`${API_URL}/research/${id}/authorize-payment`, { method: "POST" });
+export async function authorizePayment(id: string, accessToken?: string | null): Promise<ResearchSession> {
+  const res = await fetch(`${API_URL}/research/${id}/authorize-payment`, {
+    method: "POST",
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+  });
   if (!res.ok) throw new Error("Payment authorization failed");
   return res.json();
 }
 
-export async function denyPayment(id: string): Promise<ResearchSession> {
-  const res = await fetch(`${API_URL}/research/${id}/deny-payment`, { method: "POST" });
+export async function denyPayment(id: string, accessToken?: string | null): Promise<ResearchSession> {
+  const res = await fetch(`${API_URL}/research/${id}/deny-payment`, {
+    method: "POST",
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+  });
   if (!res.ok) throw new Error("Failed to skip payment");
   return res.json();
 }

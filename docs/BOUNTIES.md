@@ -1,36 +1,44 @@
 # Bounties
 
+The detailed, cited status and production checklist is in [ETHONLINE_2026_READINESS.md](./ETHONLINE_2026_READINESS.md).
+
 ## Primary targets (Start Fresh)
 
-### The Graph — Best AI Use Case (From Scratch) — $5,000
-- [ ] Load-bearing Graph data via MCP
-- [ ] Meaningful reasoning + scoring
-- [ ] Live data (no mocks when keys set)
-- [ ] 2–4 min video + public repo
+### The Graph — Best Use of Composable or Standardized Graph Products — $5,000
+- [x] Live Graph gateway data
+- [x] Messari Lending/CDP shared query across multiple protocols
+- [x] Standards leverage documented
+- [ ] Public deployment and 2–4 minute video
 
-### The Graph — Composable / Standardized — $5,000
-- [ ] Messari Lending/CDP one-query-N-protocols
-- [ ] Standards leverage documented in README
+### The Graph — Best AI Tooling or AI Use Case (From Scratch) — $5,000
+- [x] Graph data is load-bearing
+- [x] Meaningful scoring, decisions, uncertainty gate and natural-language output
+- [x] Real Streamable HTTP MCP tool
+- [ ] Agent `SKILL.md`
+- [ ] Public deployment and 2–4 minute video
 
-### ENSv2 — Best Use of ENSv2 — $4,500
-- [ ] Sepolia ENSv2
-- [ ] Permissioned resolver + EAC (fail then succeed)
-- [ ] Functional demo, no hardcoded scores
+### Privy — Best B2B financial product — $2,500
+- [x] Privy login and server-side access-token verification
+- [x] Restricted Privy wallet policy provisioning script
+- [x] Privy-managed signer wired to x402 client
+- [ ] Create/fund wallet and complete a real settled payment
+- [ ] Show wallet, policy, receipt and explorer link in demo
 
-## Secondary
+## Secondary targets
 
-### Privy B2B — $2,500
-- [ ] Org research treasury
-- [ ] Policy control (allowlist + cap)
+### Bazantic — Best Recipe using sponsor APIs — $1,000
+- [x] OpenAPI document, real MCP server and integration manifest
+- [ ] Public Bazantic x402/MPP gateway
+- [ ] Published two-service Graph + Scout recipe
+- [ ] Screen recording and account username
 
-### Privy Financial Flow — $2,500
-- [ ] Fund → x402 pay → spend report
+### ENS — Best Use of ENSv2 — $4,500
+- [x] Real Sepolia resolver read/write implementation; no simulated fallback
+- [ ] Provision name and Permissioned Resolver
+- [ ] Grant scoped EAC permissions
+- [ ] Capture successful and unauthorized-revert transactions
+- [ ] Make ENS resolution a runtime dependency
 
-### Bazantic Recipe — $1,000
-- [ ] Graph + Scout in one recipe flow
-- [ ] Screen recording + username
+## Do not target
 
-## Skip
-
-- Bazantic "Help an Agent" (Continuity only)
-- ENS existing-project integration (Continuity only)
+- Continuity-only tracks: the repository started during ETHOnline 2026.

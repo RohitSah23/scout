@@ -1,4 +1,7 @@
 import type { PaymentProvider, PaymentRequest, PaymentResult } from "@scout/schemas";
+import { x402Client, wrapFetchWithPayment, x402HTTPClient } from "@x402/fetch";
+import { ExactEvmScheme } from "@x402/evm/exact/client";
+import { privateKeyToAccount } from "viem/accounts";
 
 export const DEEP_ANALYSIS_PRICE = 0.03;
 export const GRAPH_QUERY_PRICE = 0.01;
@@ -33,37 +36,70 @@ export function checkBudgetPolicy(
   return { allowed: true, reason: "Policy check passed" };
 }
 
+function transactionReference(value: unknown): string | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  for (const key of ["transaction", "transactionHash", "txHash", "tx", "hash"]) {
+    if (typeof record[key] === "string") return record[key];
+  }
+  for (const child of Object.values(record)) {
+    const found = transactionReference(child);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+/** Real x402 v2 EVM payer. It never falls back to a simulated receipt. */
 export class X402PaymentProvider implements PaymentProvider {
   constructor(
-    private privateKey?: string,
-    private simulate = true,
+    private readonly privateKey: string,
+    private readonly maxAmountPerPayment = PER_REQUEST_CAP,
   ) {}
 
   async pay(request: PaymentRequest): Promise<PaymentResult> {
-    if (this.simulate || !this.privateKey) {
+    if (!/^0x[0-9a-fA-F]{64}$/.test(this.privateKey)) {
       return {
-        success: true,
-        txRef: `sim-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        data: { simulated: true, url: request.url, amount: request.amount },
+        success: false,
+        error: "X402_PRIVATE_KEY must be a 32-byte EVM private key (0x + 64 hex characters)",
       };
     }
 
     try {
-      const res = await fetch(request.url, { method: "GET" });
-      if (res.status === 402) {
-        const paymentRequired = res.headers.get("payment-required");
+      const account = privateKeyToAccount(this.privateKey as `0x${string}`);
+      const client = new x402Client();
+      client.setSpendControls({ maxAmountPerPayment: `$${this.maxAmountPerPayment}` });
+      client.register("eip155:*", new ExactEvmScheme(account));
+
+      const paidFetch = wrapFetchWithPayment(fetch, client);
+      const response = await paidFetch(request.url, {
+        method: request.method ?? "GET",
+        headers: request.body === undefined ? undefined : { "Content-Type": "application/json" },
+        body: request.body === undefined ? undefined : JSON.stringify(request.body),
+      });
+
+      if (!response.ok) {
         return {
-          success: true,
-          txRef: `x402-${Date.now()}`,
-          data: { paymentRequired, settled: true },
+          success: false,
+          error: `Paid service returned HTTP ${response.status}: ${(await response.text()).slice(0, 300)}`,
         };
       }
-      const data = await res.json();
-      return { success: true, txRef: `x402-${Date.now()}`, data };
+
+      const paymentResult = await new x402HTTPClient(client).processResponse(response);
+      const responseData = await response.json();
+      const txRef = transactionReference(paymentResult);
+      if (!txRef) {
+        return { success: false, error: "x402 response did not contain a verifiable settlement transaction" };
+      }
+
+      return {
+        success: true,
+        txRef,
+        data: { resource: responseData, settlement: paymentResult },
+      };
     } catch (err) {
       return {
         success: false,
-        error: err instanceof Error ? err.message : "Payment failed",
+        error: err instanceof Error ? err.message : "x402 payment failed",
       };
     }
   }

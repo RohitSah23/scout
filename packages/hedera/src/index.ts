@@ -7,17 +7,10 @@ import type { PaymentProvider, PaymentRequest, PaymentResult } from "@scout/sche
 export class HederaBlocky402Provider implements PaymentProvider {
   constructor(private facilitatorUrl = "https://blocky402.testnet.hedera") {}
 
-  async pay(request: PaymentRequest): Promise<PaymentResult> {
-    if (!process.env.HEDERA_ENABLED) {
-      return {
-        success: false,
-        error: "Hedera adapter disabled. Set HEDERA_ENABLED=1 to activate Blocky402 path.",
-      };
-    }
+  async pay(_request: PaymentRequest): Promise<PaymentResult> {
     return {
-      success: true,
-      txRef: `hedera-blocky402-${Date.now()}`,
-      data: { facilitator: this.facilitatorUrl, request },
+      success: false,
+      error: `Hedera payments are not implemented. Configure an official Blocky402 client for ${this.facilitatorUrl} before enabling this adapter.`,
     };
   }
 }

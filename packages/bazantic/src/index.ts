@@ -19,7 +19,7 @@ export const PROTOCOL_OPPORTUNITY_RECIPE = {
     riskScore: "number",
     recommendation: "string",
   },
-  cost: "0.03 USDC",
+  cost: "Base research is free; optional diagnostics cost 0.03 USDC over x402",
   steps: [
     "Query The Graph Messari Lending/CDP standardized subgraphs via Scout Graph provider",
     "Enrich with OpenSEO web intelligence",
@@ -33,11 +33,14 @@ export const BAZANTIC_GATEWAY_CONFIG = {
   gatewayName: "scout-research-gateway",
   mcpToolName: "protocol_opportunity_analysis",
   endpoint: "/api/protocol-opportunity",
-  x402Enabled: true,
+  paidEndpoint: "/api/deep-protocol-analysis",
+  x402Enabled: false,
 };
 
 export function buildRecipeManifest(apiBaseUrl: string) {
   return {
+    status: "integration-template",
+    activationRequired: "Import /openapi.json into a deployed Bazantic gateway and publish the recipe from a Bazantic account.",
     recipe: PROTOCOL_OPPORTUNITY_RECIPE,
     gateway: {
       ...BAZANTIC_GATEWAY_CONFIG,
@@ -45,7 +48,7 @@ export function buildRecipeManifest(apiBaseUrl: string) {
     },
     mcp: {
       url: `${apiBaseUrl}/mcp`,
-      tools: ["protocol_opportunity_analysis", "graph_lending_compare"],
+      tools: ["protocol_opportunity_analysis"],
     },
   };
 }

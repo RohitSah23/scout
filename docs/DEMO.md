@@ -27,4 +27,4 @@ Scout discovers Moonwell, Seamless, Aave, and QiDao on Base. One Messari query t
 - OpenSEO tool output in sources
 - 402 response headers
 - Privy policy chips + spend tx
-- ENS Sepolia tx (or simulated with EAC error message)
+- ENS Sepolia success transaction and unauthorized-write revert

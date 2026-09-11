@@ -16,9 +16,9 @@ import {
   type ScoringContext,
 } from "@scout/scoring";
 import { narrateRecommendation, toRecommendation } from "@scout/llm";
-import { DEEP_ANALYSIS_PRICE_USD, runDeepAnalysis } from "@scout/deep-analysis";
+import { DEEP_ANALYSIS_PRICE_USD, type DeepAnalysisResult } from "@scout/deep-analysis";
 import { createENSIdentity } from "@scout/ens";
-import { createDefaultPolicy, PrivyWalletProvider } from "@scout/privy";
+import { createDefaultPolicy, PrivyX402PaymentProvider } from "@scout/privy";
 
 export type LogCallback = (entry: DecisionLogEntry) => void;
 export type SessionUpdateCallback = (session: ResearchSession) => void;
@@ -33,6 +33,11 @@ export interface RunResearchOptions {
   openseoApiKey?: string;
   openseoProjectId?: string;
   payToAddresses?: string[];
+  deepAnalysisUrl?: string;
+  privyAppId?: string;
+  privyAppSecret?: string;
+  privyWalletId?: string;
+  privyPolicyId?: string;
   onLog?: LogCallback;
   onSessionUpdate?: SessionUpdateCallback;
 }
@@ -84,10 +89,7 @@ function createRuntime(
   opts: Pick<RunResearchOptions, "onLog" | "onSessionUpdate">,
   decisionLog: DecisionLogEntry[] = [],
 ): ResearchRuntime {
-  const onLog = (entry: DecisionLogEntry) => {
-    decisionLog.push(entry);
-    opts.onLog?.(entry);
-  };
+  const onLog = (entry: DecisionLogEntry) => opts.onLog?.(entry);
   return { onLog, onSessionUpdate: opts.onSessionUpdate, decisionLog };
 }
 
@@ -283,7 +285,7 @@ export async function runResearch(opts: RunResearchOptions): Promise<ResearchSes
       const top2 = provisional.candidates.slice(0, 2);
       emit(
         runtime,
-        `Uncertainty detected: ${gate.reason}. High-conviction decision requires deep wallet-flow analysis.`,
+        `Uncertainty detected: ${gate.reason}. High-conviction decision requires candidate-specific diagnostics.`,
         "warn",
         "uncertainty.detected",
         {
@@ -301,7 +303,7 @@ export async function runResearch(opts: RunResearchOptions): Promise<ResearchSes
         confidence: provisional.confidence,
         budgetBefore: session.budget.remaining,
         budgetAfter: Math.round((session.budget.remaining - DEEP_ANALYSIS_PRICE_USD) * 100) / 100,
-        serviceName: "Deep wallet-flow analysis",
+        serviceName: "Candidate-specific protocol diagnostics",
       };
 
       emit(
@@ -344,7 +346,17 @@ export async function runResearchPhase1(opts: RunResearchOptions): Promise<Resea
 
 export async function authorizePaymentAndComplete(
   session: ResearchSession,
-  opts: Pick<RunResearchOptions, "onLog" | "onSessionUpdate" | "payToAddresses">,
+  opts: Pick<
+    RunResearchOptions,
+    | "onLog"
+    | "onSessionUpdate"
+    | "payToAddresses"
+    | "deepAnalysisUrl"
+    | "privyAppId"
+    | "privyAppSecret"
+    | "privyWalletId"
+    | "privyPolicyId"
+  >,
 ): Promise<ResearchSession> {
   const runtime = createRuntime(opts, [...session.decisionLog]);
   emit(
@@ -354,16 +366,36 @@ export async function authorizePaymentAndComplete(
     "payment.pending",
   );
 
-  const policy = createDefaultPolicy(
-    opts.payToAddresses ?? [process.env.X402_PAY_TO_ADDRESS ?? "0xscoutdeepanalysis"],
-    session.budget.initial,
-  );
-  const wallet = new PrivyWalletProvider(policy);
+  const recipients = opts.payToAddresses ?? [];
+  const recipient = recipients[0];
+  if (!recipient) throw new Error("X402_PAY_TO_ADDRESS is required");
+  if (!opts.deepAnalysisUrl) throw new Error("DEEP_ANALYSIS_URL is required");
 
-  const payResult = await wallet.signPayment({
+  const policy = createDefaultPolicy(
+    recipients,
+    session.budget.initial,
+    session.budget.spent,
+  );
+  const wallet = new PrivyX402PaymentProvider({
+    ...policy,
+    appId: opts.privyAppId ?? "",
+    appSecret: opts.privyAppSecret ?? "",
+    walletId: opts.privyWalletId ?? "",
+    expectedPolicyId: opts.privyPolicyId ?? "",
+  });
+
+  const targetProtocol =
+    session.paymentPending?.targetProtocols[0] ?? session.candidates[0]?.protocol;
+  const targetCandidate = session.candidates.find((c) => c.protocol === targetProtocol);
+  if (!targetProtocol || !targetCandidate) throw new Error("No candidate is available for deep analysis");
+
+  const payResult = await wallet.pay({
+    url: opts.deepAnalysisUrl,
     amount: DEEP_ANALYSIS_PRICE_USD,
-    recipient: (opts.payToAddresses ?? [process.env.X402_PAY_TO_ADDRESS ?? "0xscoutdeepanalysis"])[0],
+    recipient,
     reason: session.paymentPending?.reason ?? "Uncertainty gate resolution",
+    method: "POST",
+    body: { protocol: targetProtocol, candidate: targetCandidate },
   });
 
   if (!payResult.success) {
@@ -373,7 +405,7 @@ export async function authorizePaymentAndComplete(
 
   emit(
     runtime,
-    `Payment settled via Privy policy (${payResult.txRef}).`,
+    `Payment settled from a policy-controlled Privy wallet (${payResult.txRef}).`,
     "success",
     "payment.settled",
     {
@@ -385,10 +417,11 @@ export async function authorizePaymentAndComplete(
   session.budget.spent = Math.round((session.budget.spent + DEEP_ANALYSIS_PRICE_USD) * 100) / 100;
   session.budget.remaining = Math.round((session.budget.initial - session.budget.spent) * 100) / 100;
 
-  const targetProtocol =
-    session.paymentPending?.targetProtocols[0] ?? session.candidates[0]?.protocol;
-  const targetCandidate = session.candidates.find((c) => c.protocol === targetProtocol);
-  const deep = runDeepAnalysis(targetProtocol, targetCandidate);
+  const paidData = payResult.data as { resource?: DeepAnalysisResult } | undefined;
+  const deep = paidData?.resource;
+  if (!deep || deep.protocol !== targetProtocol) {
+    throw new Error("Paid service returned an invalid deep-analysis payload");
+  }
 
   const paidSourceId = `deep-${targetProtocol.toLowerCase().replace(/\s+/g, "-")}`;
   session.sources.push({
@@ -419,7 +452,7 @@ export async function authorizePaymentAndComplete(
 
   emit(
     runtime,
-    `Deep analysis received for ${targetProtocol}: whale activity ${deep.whale_activity}%, retention ${deep.retention}%.`,
+    `Paid diagnostics received for ${targetProtocol} from ${deep.observed_fields.length} observed fields.`,
     "info",
     "deep_analysis.received",
     {
@@ -428,6 +461,8 @@ export async function authorizePaymentAndComplete(
       confidenceBoost: deep.confidence_boost,
       whaleActivity: deep.whale_activity,
       retention: deep.retention,
+      observedFields: deep.observed_fields,
+      methodology: deep.methodology,
     },
   );
 
@@ -446,7 +481,7 @@ export async function authorizePaymentAndComplete(
       (onchainRanks[i] / maxRank) * 100,
       scoringContextFor(session, c, {
         paidEvidenceId: paidSourceId,
-        sourceCount: session.sources.length + 1,
+        sourceCount: session.sources.length,
       }),
       c.protocol === targetProtocol,
     ),
@@ -514,15 +549,18 @@ async function finalizeResearch(
     confidence: scoreBreakdown.confidence,
   });
 
-  // ENSv2 status record write
-  const ens = createENSIdentity(session.chain ?? "base", session.budget.initial);
-  const ensWrite = await ens.writeResearchStatus("complete", `report-${session.researchId}`);
-  if (ensWrite.success) {
+  // A missing or rejected ENSv2 write is recorded explicitly; no synthetic receipt is emitted.
+  try {
+    const ens = createENSIdentity(session.chain ?? "base", session.budget.initial);
+    const ensWrite = await ens.writeResearchStatus("complete", `report-${session.researchId}`);
+    if (!ensWrite.success || !ensWrite.txHash) {
+      throw new Error(ensWrite.error ?? "ENSv2 write did not produce a transaction hash");
+    }
     const resolvedName = await ens.resolveName();
     session.agent.ensName = resolvedName;
     emit(
       runtime,
-      `ENS status record published: ${resolvedName} → research.status=complete (${ensWrite.txHash})`,
+      `ENSv2 status record published: ${resolvedName} → research.status=complete (${ensWrite.txHash})`,
       "success",
       "ens.updated",
       {
@@ -530,6 +568,13 @@ async function finalizeResearch(
         status: "complete",
         txHash: ensWrite.txHash,
       },
+    );
+  } catch (error) {
+    emit(
+      runtime,
+      `ENSv2 status was not published: ${error instanceof Error ? error.message : "write failed"}`,
+      "warn",
+      "ens.failed",
     );
   }
 

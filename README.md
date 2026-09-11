@@ -29,7 +29,7 @@ Crypto protocols live in two separate worlds:
           v                            v                            v
 +-------------------+        +-------------------+        +-------------------+
 |     The Graph     |        |      OpenSEO      |        |     Scoring       |
-| Live Subgraph MCP |        | Search & SERP MCP |        | Opportunity Matrix|
+| Live Graph Gateway |        | Search & SERP MCP |        | Opportunity Matrix|
 +-------------------+        +-------------------+        +---------+---------+
                                                                     |
                                                       Uncertainty Gate Triggered
@@ -65,7 +65,7 @@ scout/
 │   └── agent/             # Standalone CLI agent runner for headless research workflows
 ├── packages/
 │   ├── agent-runtime/     # Core autonomous research loop and state machine
-│   ├── graph/             # The Graph Subgraph MCP queries & Messari standardized schema resolvers
+│   ├── graph/             # The Graph gateway queries & Messari standardized schema resolvers
 │   ├── openseo/           # OpenSEO MCP client for keyword research, SERP, and domain authority
 │   ├── scoring/           # Deterministic 6-dimension Opportunity Score & Uncertainty Gate
 │   ├── x402/              # HTTP 402 client/facilitator for autonomous USDC micropayments
@@ -108,7 +108,7 @@ cp .env.example .env
 
 Open `.env` and configure your API keys. See **[docs/API_KEYS.md](docs/API_KEYS.md)** for where to obtain each credential (OpenRouter, The Graph, OpenSEO, Privy, x402/CDP, ENS Sepolia, Bazantic).
 
-*(Note: Research requires live `GRAPH_GATEWAY_API_KEY`, `OPENSEO_API_KEY`, and `OPENROUTER_API_KEY`. x402 and ENS remain optional/simulated until configured.)*
+*(Note: Research requires live `GRAPH_GATEWAY_API_KEY`, `OPENSEO_API_KEY`, and `OPENROUTER_API_KEY`. x402, Privy payments, and ENS fail closed until their live wallet and resolver configuration is present.)*
 
 ---
 

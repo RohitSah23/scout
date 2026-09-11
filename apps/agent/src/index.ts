@@ -23,5 +23,10 @@ const session = await runResearch({
 });
 
 console.log("\n--- Result ---");
-console.log(JSON.stringify(session.recommendation, null, 2));
-console.log("Score:", session.scoreBreakdown?.winner, session.recommendation?.score);
+if (session.status === "awaiting_payment") {
+  console.log(JSON.stringify({ status: session.status, paymentPending: session.paymentPending }, null, 2));
+  console.log("Provisional winner:", session.scoreBreakdown?.winner);
+} else {
+  console.log(JSON.stringify(session.recommendation, null, 2));
+  console.log("Score:", session.scoreBreakdown?.winner, session.recommendation?.score);
+}

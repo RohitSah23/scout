@@ -1,6 +1,6 @@
 # Where to Get All Scout API Keys
 
-Scout requires **live API credentials** for research data (The Graph, OpenSEO, OpenRouter). Missing keys cause the research run to fail with a clear error — there are no silent mock fallbacks for on-chain or SEO evidence. **x402** and **ENS** remain optional/simulated until you configure on-chain wallets.
+Scout requires **live API credentials** for research data (The Graph, OpenSEO, OpenRouter). Missing keys cause the research run to fail with a clear error — there are no silent mock fallbacks for on-chain or SEO evidence. **x402**, **Privy payments**, and **ENS** fail closed until live wallet and resolver configuration is supplied.
 
 ## Quick priority
 
@@ -10,7 +10,7 @@ Scout requires **live API credentials** for research data (The Graph, OpenSEO, O
 | **Live data** | `GRAPH_GATEWAY_API_KEY`, `OPENSEO_API_KEY` | Real subgraph + SEO data instead of mocks |
 | **Wallet UX** | `NEXT_PUBLIC_PRIVY_APP_ID` | Enables Privy login in the web app |
 | **Payments (optional)** | `X402_*`, `ENS_*` private keys | Only needed for real on-chain flows |
-| **Future / unused in code** | `BAZANTIC_API_KEY`, `PRIVY_APP_SECRET`, `X402_FACILITATOR_*` | Listed in `.env.example` but not yet read by the app |
+| **External setup** | Bazantic account, Privy wallet/policy, ENSv2 name/resolver | Required to turn the implemented integrations into verifiable prize evidence |
 
 ---
 
@@ -70,7 +70,7 @@ Scout requires **live API credentials** for research data (The Graph, OpenSEO, O
 
 ```mermaid
 flowchart LR
-  Agent[ScoutAgent] -->|"GET /api/deep-protocol-analysis"| API[ScoutAPI]
+  Agent[ScoutAgent] -->|"POST /api/deep-protocol-analysis"| API[ScoutAPI]
   API -->|"402 Payment Required"| Agent
   Agent -->|"sign USDC payment"| Wallet[AgentWallet]
   Wallet --> BaseSepolia[BaseSepolia]
@@ -86,7 +86,7 @@ flowchart LR
 
 **CDP docs:** [x402 CDP Facilitator](https://docs.cdp.coinbase.com/x402/seller/facilitator)
 
-**Used by:** `packages/x402/src/index.ts` simulates payments when `X402_PRIVATE_KEY` is missing. `apps/api/src/index.ts` uses `X402_PAY_TO_ADDRESS` for the deep-analysis 402 endpoint. Facilitator keys are in `.env.example` but not yet wired into the codebase.
+**Used by:** `packages/x402/src/index.ts` rejects payments when its signing key is missing or invalid. The production agent path uses the policy-controlled Privy wallet. `apps/api/src/index.ts` uses `X402_PAY_TO_ADDRESS` and `X402_FACILITATOR_URL` for the deep-analysis 402 endpoint. The public testnet facilitator needs no API key; use an authenticated production facilitator or self-hosted facilitator for mainnet.
 
 **Testnet USDC:** Use Base Sepolia faucet / bridge; Scout's deep analysis costs **$0.03 USDC** per call.
 
@@ -94,7 +94,7 @@ flowchart LR
 
 ## 5. Privy
 
-**Vars:** `NEXT_PUBLIC_PRIVY_APP_ID`, `PRIVY_APP_SECRET`
+**Vars:** `NEXT_PUBLIC_PRIVY_APP_ID`, `PRIVY_APP_SECRET`, `PRIVY_WALLET_ID`, `PRIVY_POLICY_ID`, `PRIVY_REQUIRE_AUTH`
 
 | Step | Action |
 |------|--------|
@@ -106,13 +106,13 @@ flowchart LR
 
 **Docs:** [Create new app](https://docs.privy.io/basics/get-started/dashboard/create-new-app)
 
-**Used by:** `apps/web/src/app/providers.tsx` only reads `NEXT_PUBLIC_PRIVY_APP_ID`. Without it, Privy auth is skipped and a simulated org wallet is shown (`PrivyPanel.tsx`). `PRIVY_APP_SECRET` is for future server-side Privy API calls and is **not used yet**.
+**Used by:** `apps/web/src/app/providers.tsx` only reads `NEXT_PUBLIC_PRIVY_APP_ID`. The API verifies Privy access tokens when `PRIVY_REQUIRE_AUTH=true`. `PRIVY_APP_SECRET`, `PRIVY_WALLET_ID`, and `PRIVY_POLICY_ID` also power the policy-controlled x402 payer.
 
 ---
 
 ## 6. ENSv2 Sepolia
 
-**Vars:** `ENS_SEPOLIA_RPC_URL`, `ENS_DEPLOYER_PRIVATE_KEY`, `ENS_AGENT_PRIVATE_KEY`, `ENS_PARENT_NAME`
+**Vars:** `ENS_SEPOLIA_RPC_URL`, `ENS_AGENT_PRIVATE_KEY`, `ENS_AGENT_NAME`, `ENS_PERMISSIONED_RESOLVER_ADDRESS`, `ENS_UNAUTHORIZED_PRIVATE_KEY`
 
 | Variable | Where to get it |
 |----------|-----------------|
@@ -123,7 +123,7 @@ flowchart LR
 
 **Docs:** [ENSv2 overview](https://docs.ens.domains/ensv2/overview), [App developers tutorial](https://docs.ens.domains/ensv2/tutorial-app-developers/)
 
-**Used by:** `packages/ens/src/index.ts` — simulates ENS writes when `ENS_AGENT_PRIVATE_KEY` is missing. You do **not** deploy ENS protocol contracts yourself; they are already on Sepolia.
+**Used by:** `packages/ens/src/index.ts` — performs direct Sepolia resolver reads/writes and returns an explicit configuration error when required values are missing. You do **not** deploy ENS protocol contracts yourself; they are already on Sepolia.
 
 **Sepolia ETH:** Use any Sepolia faucet. Registration fees on Sepolia use free `MockUSDC` (mintable on-chain).
 
@@ -165,7 +165,7 @@ OPENSEO_API_KEY=oseo_...
 NEXT_PUBLIC_PRIVY_APP_ID=...
 ```
 
-Leave x402/ENS blank until you need on-chain payments and identity — those integrations stay simulated. Graph, OpenSEO, and OpenRouter keys are required for research.
+Leaving x402/ENS blank disables those live features with explicit errors; Scout never fabricates their evidence. Graph, OpenSEO, and OpenRouter keys are required for research.
 
 ---
 
