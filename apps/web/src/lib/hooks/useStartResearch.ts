@@ -3,9 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { startResearch } from "../api";
+import { useScoutAuth } from "@/app/providers";
 
 export function useStartResearch() {
   const router = useRouter();
+  const { getAccessToken } = useScoutAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,7 +19,7 @@ export function useStartResearch() {
     setLoading(true);
     setError(null);
     try {
-      const { researchId } = await startResearch(params);
+      const { researchId } = await startResearch(params, await getAccessToken());
       router.push(`/research/${researchId}`);
     } catch {
       setError("Failed to start research mission.");

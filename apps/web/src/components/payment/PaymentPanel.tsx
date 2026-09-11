@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { PaymentTimeline } from "./PaymentTimeline";
 import { UncertaintyPanel } from "./UncertaintyPanel";
+import { useScoutAuth } from "@/app/providers";
 
 export function PaymentPanel({
   researchId,
@@ -22,13 +23,14 @@ export function PaymentPanel({
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState<"prompt" | "settled">("prompt");
   const [activeStep, setActiveStep] = useState(0);
+  const { getAccessToken } = useScoutAuth();
 
   async function handleAuthorize() {
     setLoading(true);
     setActiveStep(2);
     try {
       setActiveStep(3);
-      await authorizePayment(researchId);
+      await authorizePayment(researchId, await getAccessToken());
       setPhase("settled");
       setActiveStep(5);
       onComplete();
@@ -40,7 +42,7 @@ export function PaymentPanel({
   async function handleSkip() {
     setLoading(true);
     try {
-      await denyPayment(researchId);
+      await denyPayment(researchId, await getAccessToken());
       onComplete();
     } catch {
       setLoading(false);

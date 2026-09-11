@@ -44,9 +44,9 @@ export function OnchainEvidenceView({ source }: { source: Source }) {
             label: parsed.summary.secondaryLabel,
             value:
               parsed.summary.secondaryLabel.includes("users")
-                ? formatScore(Number(parsed.summary.secondaryValue))
+                  ? formatScore(Number(parsed.summary.secondaryValue))
                 : parsed.summary.secondaryLabel.includes("asset")
-                  ? parsed.summary.secondaryValue
+                  ? (parsed.summary.secondaryValue ?? "—")
                   : formatUsd(parsed.summary.secondaryValue),
           },
         ]

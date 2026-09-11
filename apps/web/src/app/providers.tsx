@@ -1,12 +1,25 @@
 "use client";
 
-import { PrivyProvider } from "@privy-io/react-auth";
+import { createContext, useContext } from "react";
+import { PrivyProvider, usePrivy } from "@privy-io/react-auth";
 
 const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+const ScoutAuthContext = createContext({
+  getAccessToken: async (): Promise<string | null> => null,
+});
+
+function PrivyAuthBridge({ children }: { children: React.ReactNode }) {
+  const { getAccessToken } = usePrivy();
+  return <ScoutAuthContext.Provider value={{ getAccessToken }}>{children}</ScoutAuthContext.Provider>;
+}
+
+export function useScoutAuth() {
+  return useContext(ScoutAuthContext);
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   if (!appId) {
-    return <>{children}</>;
+    return <ScoutAuthContext.Provider value={{ getAccessToken: async () => null }}>{children}</ScoutAuthContext.Provider>;
   }
   return (
     <PrivyProvider
@@ -17,7 +30,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         embeddedWallets: { createOnLogin: "users-without-wallets" },
       }}
     >
-      {children}
+      <PrivyAuthBridge>{children}</PrivyAuthBridge>
     </PrivyProvider>
   );
 }

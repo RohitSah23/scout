@@ -174,6 +174,7 @@ export const ResearchEventTypeSchema = z.enum([
   "deep_analysis.received",
   "recommendation.generated",
   "ens.updated",
+  "ens.failed",
   "research.completed",
   "research.failed",
 ]);
@@ -197,7 +198,7 @@ export const PaymentPendingSchema = z.object({
   confidence: z.number(),
   budgetBefore: z.number(),
   budgetAfter: z.number(),
-  serviceName: z.string().default("Deep wallet-flow analysis"),
+  serviceName: z.string().default("Candidate-specific protocol diagnostics"),
 });
 
 export type PaymentPending = z.infer<typeof PaymentPendingSchema>;
@@ -257,6 +258,8 @@ export interface PaymentRequest {
   amount: number;
   reason: string;
   recipient: string;
+  method?: "GET" | "POST";
+  body?: unknown;
 }
 
 export interface PaymentResult {
