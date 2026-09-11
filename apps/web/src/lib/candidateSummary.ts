@@ -20,11 +20,31 @@ export function matchRawCandidate(
   score: CandidateScore,
   rawCandidates?: Candidate[],
 ): Candidate | undefined {
-  return rawCandidates?.find(
-    (c) =>
-      c.protocol === score.protocol &&
-      c.chain.toLowerCase() === score.chain.toLowerCase(),
-  );
+  return rawCandidates?.find((c) => {
+    if (score.assetSymbol && score.sourceProtocol) {
+      return (
+        c.assetSymbol === score.assetSymbol &&
+        c.sourceProtocol === score.sourceProtocol &&
+        c.chain.toLowerCase() === score.chain.toLowerCase()
+      );
+    }
+    return (
+      c.protocol === score.protocol && c.chain.toLowerCase() === score.chain.toLowerCase()
+    );
+  });
+}
+
+export function candidateDisplayTitle(score: CandidateScore): string {
+  if (score.assetSymbol) return score.assetSymbol;
+  return score.protocol.split(" · ")[0] ?? score.protocol;
+}
+
+export function candidateDisplaySubtitle(score: CandidateScore): string {
+  if (score.sourceProtocol) {
+    const window = score.windowLabel ? ` · ${score.windowLabel}` : "";
+    return `${score.sourceProtocol} · ${score.chain}${window}`;
+  }
+  return score.chain;
 }
 
 export function candidateInsight(score: CandidateScore, raw?: Candidate): string {

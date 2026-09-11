@@ -24,6 +24,25 @@ export class OpenSEOMcpClient {
   constructor(private readonly options: OpenSEOMcpOptions) {}
 
   async callTool<T = unknown>(name: string, args: Record<string, unknown>): Promise<T> {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        return await this.callToolOnce<T>(name, args);
+      } catch (err) {
+        lastError = err;
+        const retryable =
+          err instanceof OpenSEOMcpError ||
+          (err instanceof Error &&
+            (/fetch failed|ECONNRESET|ETIMEDOUT|socket hang up/i.test(err.message) ||
+              /fetch failed|ECONNRESET|ETIMEDOUT|socket hang up/i.test(String(err.cause ?? ""))));
+        if (!retryable || attempt === 3) break;
+        await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+      }
+    }
+    throw lastError instanceof Error ? lastError : new OpenSEOMcpError(String(lastError));
+  }
+
+  private async callToolOnce<T>(name: string, args: Record<string, unknown>): Promise<T> {
     const res = await fetch(MCP_URL, {
       method: "POST",
       headers: {

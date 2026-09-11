@@ -1,7 +1,12 @@
 import type { Source } from "@scout/schemas";
 import { formatTimestamp, pctChange, protocolFromSourceId } from "./format";
 
-export type GraphEvidenceKind = "compound-v3" | "aave-v3" | "messari" | "unknown";
+export type GraphEvidenceKind =
+  | "compound-v3"
+  | "aave-v3"
+  | "aave-v3-trending"
+  | "messari"
+  | "unknown";
 
 export interface TimeSeriesPoint {
   label: string;
@@ -16,6 +21,8 @@ export interface ReserveRow {
   symbol: string;
   liquidity: number;
   changePct: number | null;
+  trendingScore?: number;
+  txCount?: number;
 }
 
 export interface ParsedGraphEvidence {
@@ -41,6 +48,7 @@ function innerData(source: Source): Record<string, unknown> | undefined {
 
 function detectKind(payload: Record<string, unknown> | undefined): GraphEvidenceKind {
   if (!payload) return "unknown";
+  if (Array.isArray(payload.trendingReserves)) return "aave-v3-trending";
   if (Array.isArray(payload.dailyProtocolAccountings)) return "compound-v3";
   if (Array.isArray(payload.reserves)) return "aave-v3";
   if (Array.isArray(payload.marketDailySnapshots)) return "messari";
@@ -88,6 +96,52 @@ export function parseGraphEvidence(source: Source): ParsedGraphEvidence | null {
         secondaryValue: recentBorrow.toFixed(0),
         changePct: pctChange(recentSupply, priorSupply),
         dataPoints: sorted.length,
+      },
+    };
+  }
+
+  if (kind === "aave-v3-trending") {
+    const trending = (payload?.trendingReserves ?? []) as Array<{
+      symbol?: string;
+      trendingScore?: number;
+      grossFlowUsd?: number;
+      netInflowUsd?: number;
+      txCount?: number;
+    }>;
+
+    const rows: ReserveRow[] = trending
+      .map((row) => ({
+        symbol: row.symbol ?? "—",
+        liquidity: row.grossFlowUsd ?? 0,
+        changePct: pctChange(row.netInflowUsd ?? 0, row.grossFlowUsd ?? 0),
+        trendingScore: row.trendingScore ?? 0,
+        txCount: row.txCount ?? 0,
+      }))
+      .slice(0, 10);
+
+    const topScore = rows[0]?.trendingScore ?? 0;
+    const totalFlow = rows.reduce((sum, row) => sum + row.liquidity, 0);
+
+    const series: TimeSeriesPoint[] = rows.slice(0, 6).map((row) => ({
+      label: row.symbol,
+      timestamp: 0,
+      primary: row.trendingScore ?? 0,
+      primaryLabel: "Trending score",
+    }));
+
+    return {
+      kind,
+      protocol,
+      live,
+      series,
+      reserves: rows,
+      summary: {
+        primaryLabel: "Top trending score (1h)",
+        primaryValue: topScore.toFixed(0),
+        secondaryLabel: "Top asset",
+        secondaryValue: rows[0]?.symbol ?? "—",
+        changePct: topScore > 0 ? pctChange(topScore, totalFlow / Math.max(rows.length, 1)) : null,
+        dataPoints: rows.length,
       },
     };
   }

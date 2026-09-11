@@ -29,7 +29,7 @@ Crypto protocols live in two separate worlds:
           v                            v                            v
 +-------------------+        +-------------------+        +-------------------+
 |     The Graph     |        |      OpenSEO      |        |     Scoring       |
-| Live Subgraph MCP |        | Search & SERP MCP |        | Opportunity Matrix|
+| Live Graph Gateway |        | Search & SERP MCP |        | Opportunity Matrix|
 +-------------------+        +-------------------+        +---------+---------+
                                                                     |
                                                       Uncertainty Gate Triggered
@@ -65,7 +65,7 @@ scout/
 │   └── agent/             # Standalone CLI agent runner for headless research workflows
 ├── packages/
 │   ├── agent-runtime/     # Core autonomous research loop and state machine
-│   ├── graph/             # The Graph Subgraph MCP queries & Messari standardized schema resolvers
+│   ├── graph/             # The Graph gateway queries & Messari standardized schema resolvers
 │   ├── openseo/           # OpenSEO MCP client for keyword research, SERP, and domain authority
 │   ├── scoring/           # Deterministic 6-dimension Opportunity Score & Uncertainty Gate
 │   ├── x402/              # HTTP 402 client/facilitator for autonomous USDC micropayments
@@ -108,7 +108,7 @@ cp .env.example .env
 
 Open `.env` and configure your API keys. See **[docs/API_KEYS.md](docs/API_KEYS.md)** for where to obtain each credential (OpenRouter, The Graph, OpenSEO, Privy, x402/CDP, ENS Sepolia, Bazantic).
 
-*(Note: Research requires live `GRAPH_GATEWAY_API_KEY`, `OPENSEO_API_KEY`, and `OPENROUTER_API_KEY`. x402 and ENS remain optional/simulated until configured.)*
+*(Note: Research requires live `GRAPH_GATEWAY_API_KEY`, `OPENSEO_API_KEY`, and `OPENROUTER_API_KEY`. x402, Privy payments, and ENS fail closed until their live wallet and resolver configuration is present.)*
 
 ---
 
@@ -141,7 +141,7 @@ node apps/agent/dist/index.js "Analyze lending protocols on Base. Best developer
 
 | Partner | Role in Scout | Key Code Package |
 |---|---|---|
-| **The Graph** | Live onchain protocol discovery & Messari standardized lending/CDP subgraphs (*"1 query × N protocols"*) | [`packages/graph`](packages/graph) |
+| **The Graph** | Live onchain protocol discovery & Messari standardized lending/CDP subgraphs (*"1 query × N protocols"*); each protocol query fetches **top 5 markets** (`inputToken`, TVL, 7d snapshots) and flattens into a **cross-protocol token leaderboard** (Aave uses native 1h trending) | [`packages/graph`](packages/graph) |
 | **OpenSEO** | Internet/search intelligence, keyword search volume, SERP rankings, and competitor gap metrics | [`packages/openseo`](packages/openseo) |
 | **x402** | Machine-native HTTP 402 payment flow for deep analysis reports ($0.03 USDC on Base Sepolia) | [`packages/x402`](packages/x402) |
 | **ENSv2** | Onchain agent identity (`scout.<project>.eth`), Permissioned Resolver & Enhanced Access Control | [`packages/ens`](packages/ens) |

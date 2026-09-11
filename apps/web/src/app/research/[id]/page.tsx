@@ -5,12 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { ScoutShell } from "@/components/shell/ScoutShell";
 import { AgentStatus } from "@/components/shell/AgentStatus";
 import { ResearchTimeline } from "@/components/research/ResearchTimeline";
+import { CandidateDiscoveryPanel } from "@/components/research/CandidateDiscoveryPanel";
 import { CandidateFunnel } from "@/components/research/CandidateFunnel";
 import { CandidateComparison } from "@/components/scoring/CandidateComparison";
 import { ResearchReport } from "@/components/report/ResearchReport";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { JudgeView } from "@/components/modes/JudgeView";
 import { TechnicalView } from "@/components/modes/TechnicalView";
+import { PaymentPanel } from "@/components/payment/PaymentPanel";
 import { useResearchStream } from "@/lib/hooks/useResearchStream";
 
 function ResearchDetailContent({ id }: { id: string }) {
@@ -24,17 +26,9 @@ function ResearchDetailContent({ id }: { id: string }) {
     );
   }, [searchParams]);
 
-  const { logs, session, loading, error, refreshSession } = useResearchStream(id);
+  const { logs, session, paymentPending, loading, error, refreshSession } = useResearchStream(id);
   const lastLog = logs[logs.length - 1];
   const initialTab = (searchParams.get("tab") as "report" | "evidence" | "timeline") ?? "report";
-
-  const timelineLogs = logs.filter(
-    (e) =>
-      !e.eventType?.startsWith("payment") &&
-      !e.eventType?.startsWith("ens") &&
-      e.eventType !== "uncertainty.detected" &&
-      e.eventType !== "deep_analysis.received",
-  );
 
   return (
     <ScoutShell session={session} lastLog={lastLog}>
@@ -43,12 +37,22 @@ function ResearchDetailContent({ id }: { id: string }) {
           <ErrorState message={error} onRetry={refreshSession} />
         )}
 
+        {session?.status === "awaiting_payment" && paymentPending && (
+          <PaymentPanel
+            researchId={id}
+            session={session}
+            paymentPending={paymentPending}
+            onComplete={refreshSession}
+          />
+        )}
+
         {session?.status === "completed" && session.recommendation ? (
           <ResearchReport session={session} tab={initialTab} />
         ) : (
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
-              <ResearchTimeline entries={timelineLogs} loading={loading} />
+              <ResearchTimeline entries={logs} loading={loading} />
+              <CandidateDiscoveryPanel session={session} />
               {session?.scoreBreakdown && session.status !== "completed" && (
                 <CandidateComparison
                   candidates={session.scoreBreakdown.candidates}
@@ -63,7 +67,7 @@ function ResearchDetailContent({ id }: { id: string }) {
                 <AgentStatus session={session} lastLog={lastLog} />
               </div>
               <CandidateFunnel session={session} />
-              {judgeMode && <JudgeView logs={timelineLogs} />}
+              {judgeMode && <JudgeView logs={logs} />}
             </div>
           </div>
         )}

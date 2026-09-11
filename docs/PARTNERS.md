@@ -1,26 +1,30 @@
 # Partners
 
 ## The Graph
-- Subgraph MCP SSE: `https://subgraphs.mcp.thegraph.com/sse`
-- **Composable Messari Lending/CDP** — one `LendingProtocolMetrics` query × N Base protocols (Moonwell, Seamless, Compound V3, QiDao) via `packages/graph/src/registry/lending-cdp.json`
-- Messari schema 2.x / 3.x lowest-common-field query in `packages/graph/src/queries.ts`
-- Optional x402: `testnet.gateway.thegraph.com/api/x402`
+- Live queries use `https://gateway.thegraph.com/api/<KEY>/subgraphs/id/<ID>`.
+- Standardized Messari Lending/CDP deployments share one query pattern; native adapters are labelled separately.
+- The Graph is load-bearing: research fails if live Graph data cannot be obtained.
 
 ## OpenSEO
-- MCP: `https://app.openseo.so/mcp`
-- Not an ETHOnline prize partner — product intelligence only
+- Scout calls the OpenSEO MCP endpoint for keyword and SERP evidence.
+- OpenSEO is product intelligence and is not an ETHOnline prize partner.
 
 ## x402
-- Scout deep analysis: `GET /api/deep-protocol-analysis` ($0.03)
-- v2 `Payment-Signature` header required
-
-## ENSv2
-- Sepolia beta — UserRegistry + Permissioned Resolver + EAC
+- Paid route: `POST /api/deep-protocol-analysis` at 0.03 USDC.
+- Official x402 v2 Hono middleware verifies and settles through the configured facilitator on Base Sepolia.
+- An arbitrary header never unlocks the resource.
 
 ## Privy
-- Org research wallet + policies (B2B + financial flow prizes)
+- Browser login provides an access token; production API routes verify it server-side.
+- A policy-controlled Privy server wallet signs the x402 EIP-712 authorization.
+- `scripts/provision-privy.mjs` creates the restricted policy and wallet after explicit review.
+
+## ENSv2
+- The viem adapter writes directly to a configured Sepolia Permissioned Resolver.
+- Missing configuration fails closed. Eligibility begins only after real onchain proof exists.
 
 ## Bazantic
-- Recipe: Graph + Scout API
-- Gateway: `/api/protocol-opportunity`
-- Manifest: `GET /bazantic/recipe`
+- OpenAPI: `GET /openapi.json`
+- MCP: Streamable HTTP at `/mcp`
+- Local recipe template: `GET /bazantic/recipe`
+- The template is not a published Bazantic gateway or recipe.

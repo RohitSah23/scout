@@ -5,8 +5,24 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "scripts": { "build": "tsc", "dev": "tsc --watch" },
-  "dependencies": { "@scout/schemas": "*", "@scout/x402": "*" },
-  "devDependencies": { "typescript": "^5.7.2" }
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@privy-io/node": "^0.34.0",
+    "@scout/schemas": "*",
+    "@scout/x402": "*",
+    "@x402/evm": "^2.25.0",
+    "@x402/fetch": "^2.25.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
 }

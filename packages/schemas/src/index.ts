@@ -74,10 +74,25 @@ export const SeoMetricsSchema = z.object({
 
 export type SeoMetrics = z.infer<typeof SeoMetricsSchema>;
 
+export const TokenMetricsSchema = z.object({
+  trendingScore: z.number().optional(),
+  grossFlowUsd: z.number().optional(),
+  netInflowUsd: z.number().optional(),
+  tvlUsd: z.number().optional(),
+  txCount: z.number().optional(),
+});
+
+export type TokenMetrics = z.infer<typeof TokenMetricsSchema>;
+
 export const CandidateSchema = z.object({
   id: z.string(),
   protocol: z.string(),
   chain: z.string(),
+  assetSymbol: z.string().optional(),
+  sourceProtocol: z.string().optional(),
+  marketId: z.string().optional(),
+  windowLabel: z.enum(["1h", "7d"]).optional(),
+  tokenMetrics: TokenMetricsSchema.optional(),
   onchainMetrics: OnchainMetricsSchema.optional(),
   seoMetrics: SeoMetricsSchema.optional(),
   deepAnalysis: z
@@ -105,6 +120,9 @@ export type Candidate = z.infer<typeof CandidateSchema>;
 export const CandidateScoreSchema = z.object({
   protocol: z.string(),
   chain: z.string(),
+  assetSymbol: z.string().optional(),
+  sourceProtocol: z.string().optional(),
+  windowLabel: z.enum(["1h", "7d"]).optional(),
   dimensions: z.array(DimensionScoreSchema),
   composite: z.number(),
   opportunityScore: z.number(),
@@ -156,6 +174,7 @@ export const ResearchEventTypeSchema = z.enum([
   "deep_analysis.received",
   "recommendation.generated",
   "ens.updated",
+  "ens.failed",
   "research.completed",
   "research.failed",
 ]);
@@ -179,7 +198,7 @@ export const PaymentPendingSchema = z.object({
   confidence: z.number(),
   budgetBefore: z.number(),
   budgetAfter: z.number(),
-  serviceName: z.string().default("Deep wallet-flow analysis"),
+  serviceName: z.string().default("Candidate-specific protocol diagnostics"),
 });
 
 export type PaymentPending = z.infer<typeof PaymentPendingSchema>;
@@ -190,6 +209,7 @@ export const ResearchSessionSchema = z.object({
   request: z.string(),
   chain: z.string().optional(),
   category: z.string().optional(),
+  researchMode: z.enum(["tokens", "protocols"]).optional(),
   agent: z.object({
     name: z.string().optional(),
     ensName: z.string().optional(),
@@ -238,6 +258,8 @@ export interface PaymentRequest {
   amount: number;
   reason: string;
   recipient: string;
+  method?: "GET" | "POST";
+  body?: unknown;
 }
 
 export interface PaymentResult {
@@ -247,7 +269,12 @@ export interface PaymentResult {
   error?: string;
 }
 
-export const GraphQueryKindSchema = z.enum(["messari", "aave-v3", "compound-v3"]);
+export const GraphQueryKindSchema = z.enum([
+  "messari",
+  "aave-v3",
+  "aave-v3-trending",
+  "compound-v3",
+]);
 
 export type GraphQueryKind = z.infer<typeof GraphQueryKindSchema>;
 

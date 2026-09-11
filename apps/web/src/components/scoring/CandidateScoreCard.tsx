@@ -3,6 +3,8 @@
 import type { Candidate, CandidateScore } from "@scout/schemas";
 import { formatScore } from "@/lib/formatScore";
 import {
+  candidateDisplaySubtitle,
+  candidateDisplayTitle,
   candidateInsight,
   matchRawCandidate,
   momentumLabel,
@@ -42,8 +44,12 @@ export function CandidateScoreCard({
             {String(rank).padStart(2, "0")}
           </span>
           <div className="min-w-0">
-            <h3 className="font-display text-lg md:text-xl uppercase truncate">{candidate.protocol}</h3>
-            <p className="font-mono text-xs text-ink/50 uppercase mt-0.5">{candidate.chain}</p>
+            <h3 className="font-display text-lg md:text-xl uppercase truncate">
+              {candidateDisplayTitle(candidate)}
+            </h3>
+            <p className="font-mono text-xs text-ink/50 uppercase mt-0.5">
+              {candidateDisplaySubtitle(candidate)}
+            </p>
             <div className="mt-2 flex flex-wrap gap-2">
               {momentum && (
                 <span className="font-mono text-[10px] uppercase px-2 py-0.5 border border-ink/20 bg-paper">

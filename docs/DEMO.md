@@ -13,8 +13,12 @@
 ## Demo prompt
 
 ```
-Analyze the top lending protocols on Base. Tell me which one has the best opportunity for a new developer product. I have a $0.50 research budget.
+Rank the top lending assets across Base protocols. Which token market has the best opportunity for a new developer product? I have a $0.50 research budget.
 ```
+
+## Token leaderboard pitch (30s)
+
+Scout discovers Moonwell, Seamless, Aave, and QiDao on Base. One Messari query template per protocol pulls the top 5 markets each. Aave adds 1-hour live event data. Result: a cross-protocol token leaderboard — e.g. cbBTC on Aave ranks #1 for short-term lending activity.
 
 ## Evidence to capture
 
@@ -23,4 +27,4 @@ Analyze the top lending protocols on Base. Tell me which one has the best opport
 - OpenSEO tool output in sources
 - 402 response headers
 - Privy policy chips + spend tx
-- ENS Sepolia tx (or simulated with EAC error message)
+- ENS Sepolia success transaction and unauthorized-write revert

@@ -34,10 +34,10 @@ export default function HomePage() {
         <div className="max-w-scout mx-auto px-4 md:px-8">
           <div className="max-w-3xl">
             <h1 className="text-display text-5xl md:text-7xl lg:text-8xl space-y-1">
-              <span className="block">What</span>
-              <span className="block">Should</span>
-              <span className="block">Scout</span>
-              <span className="block text-signal">Find?</span>
+              <span className="block">What Should</span>
+              <span className="block">
+                Scout <span className="text-signal">Find?</span>
+              </span>
             </h1>
             <p className="mt-8 text-lg text-ink/70">Ask a research question.</p>
             <div className="mt-8">

@@ -7,6 +7,7 @@ config({ path: resolve(process.cwd(), ".env") });
 const graph = new GraphProvider(process.env.GRAPH_GATEWAY_API_KEY);
 const result = await graph.execute({ action: "query-all", chain: "base" });
 
+console.log("discoveredCount:", result.discoveredCount);
 console.log("protocolCount:", result.protocolCount);
 console.log("messariProtocolCount:", result.messariProtocolCount);
 console.log("composable:", result.composable, "| standard:", result.schemaStandard);

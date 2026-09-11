@@ -12,7 +12,7 @@ function MissionConfig() {
   const params = useSearchParams();
   const [prompt, setPrompt] = useState(
     params.get("prompt") ??
-      "Analyze the top lending protocols on Base. Tell me which one has the best opportunity for a new developer product.",
+      "Rank the top lending assets across Base protocols. Which token market has the best opportunity for a new developer product?",
   );
   const [chain, setChain] = useState("base");
   const [category, setCategory] = useState("lending");
@@ -47,6 +47,9 @@ function MissionConfig() {
               >
                 <option value="base">Base</option>
                 <option value="ethereum">Ethereum</option>
+                <option value="arbitrum">Arbitrum</option>
+                <option value="optimism">Optimism</option>
+                <option value="polygon">Polygon</option>
               </select>
             </label>
             <label className="space-y-2">

@@ -1,23 +1,34 @@
-import type { Recommendation } from "@scout/schemas";
+import type { CandidateScore, Recommendation } from "@scout/schemas";
 import { ToolBadge } from "@/components/ui/Badge";
+import { candidateDisplaySubtitle, candidateDisplayTitle } from "@/lib/candidateSummary";
 import { formatScore } from "@/lib/formatScore";
 
 export function RecommendationBlock({
   recommendation,
+  winner,
   confidence,
   sources,
 }: {
   recommendation: Recommendation;
+  winner?: CandidateScore;
   confidence?: number;
   sources?: string[];
 }) {
+  const title = winner ? candidateDisplayTitle(winner) : recommendation.winner;
+  const subtitle = winner ? candidateDisplaySubtitle(winner) : null;
+
   return (
     <div className="border-brutal bg-paper-dark text-paper p-8 md:p-12 space-y-8">
       <div>
-        <p className="font-display text-xs uppercase tracking-widest text-paper/60">Best Opportunity</p>
+        <p className="font-display text-xs uppercase tracking-widest text-paper/60">Top Lending Asset</p>
         <h2 className="font-display text-4xl md:text-6xl uppercase mt-2 tracking-tight">
-          {recommendation.winner}
+          {title}
         </h2>
+        {subtitle && (
+          <p className="font-display text-lg md:text-xl uppercase tracking-wide text-paper/60 mt-2">
+            {subtitle}
+          </p>
+        )}
         <p className="font-mono text-5xl md:text-7xl font-bold mt-4 tabular-nums">
           {formatScore(recommendation.score)}
           <span className="text-2xl text-paper/40">/100</span>

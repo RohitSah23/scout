@@ -31,7 +31,10 @@ export function OnchainEvidenceView({ source }: { source: Source }) {
   const metrics = [
     {
       label: parsed.summary.primaryLabel,
-      value: formatUsd(parsed.summary.primaryValue),
+      value:
+        parsed.kind === "aave-v3-trending"
+          ? formatScore(Number(parsed.summary.primaryValue))
+          : formatUsd(parsed.summary.primaryValue),
       hint: parsed.summary.changePct != null ? `${formatPct(parsed.summary.changePct)} vs period start` : undefined,
       tone: changeTone as "default" | "positive" | "negative",
     },
@@ -39,9 +42,12 @@ export function OnchainEvidenceView({ source }: { source: Source }) {
       ? [
           {
             label: parsed.summary.secondaryLabel,
-            value: parsed.summary.secondaryLabel.includes("users")
-              ? formatScore(Number(parsed.summary.secondaryValue))
-              : formatUsd(parsed.summary.secondaryValue),
+            value:
+              parsed.summary.secondaryLabel.includes("users")
+                  ? formatScore(Number(parsed.summary.secondaryValue))
+                : parsed.summary.secondaryLabel.includes("asset")
+                  ? (parsed.summary.secondaryValue ?? "—")
+                  : formatUsd(parsed.summary.secondaryValue),
           },
         ]
       : []),
@@ -69,7 +75,11 @@ export function OnchainEvidenceView({ source }: { source: Source }) {
       {chartData.length > 0 && (
         <div className="border border-ink/20 p-4 bg-paper">
           <h4 className="font-display text-xs uppercase tracking-widest text-ink/60 mb-4">
-            {parsed.kind === "aave-v3" ? "Top reserves by liquidity" : "30-day trend"}
+            {parsed.kind === "aave-v3-trending"
+              ? "Trending assets (last 1 hour)"
+              : parsed.kind === "aave-v3"
+                ? "Top reserves by liquidity"
+                : "30-day trend"}
           </h4>
           <MiniBarChart
             data={chartData}
@@ -118,30 +128,49 @@ export function OnchainEvidenceView({ source }: { source: Source }) {
 
       {parsed.reserves && parsed.reserves.length > 0 && (
         <div>
-          <h4 className="font-display text-xs uppercase tracking-widest text-ink/60 mb-3">Reserve breakdown</h4>
+          <h4 className="font-display text-xs uppercase tracking-widest text-ink/60 mb-3">
+            {parsed.kind === "aave-v3-trending" ? "1h trending breakdown" : "Reserve breakdown"}
+          </h4>
           <DataTable
             rows={parsed.reserves}
             columns={[
               { key: "symbol", header: "Asset", render: (r) => r.symbol },
               {
                 key: "liquidity",
-                header: "Liquidity",
+                header: parsed.kind === "aave-v3-trending" ? "1h flow" : "Liquidity",
                 align: "right",
                 render: (r) => formatUsd(r.liquidity),
               },
-              {
-                key: "change",
-                header: "Change",
-                align: "right",
-                render: (r) =>
-                  r.changePct == null ? (
-                    "—"
-                  ) : (
-                    <span className={r.changePct >= 0 ? "text-success" : "text-error"}>
-                      {formatPct(r.changePct)}
-                    </span>
-                  ),
-              },
+              ...(parsed.kind === "aave-v3-trending"
+                ? [
+                    {
+                      key: "score",
+                      header: "Score",
+                      align: "right" as const,
+                      render: (r: { trendingScore?: number }) => formatScore(r.trendingScore ?? 0),
+                    },
+                    {
+                      key: "txs",
+                      header: "Txs",
+                      align: "right" as const,
+                      render: (r: { txCount?: number }) => String(r.txCount ?? 0),
+                    },
+                  ]
+                : [
+                    {
+                      key: "change",
+                      header: "Change",
+                      align: "right" as const,
+                      render: (r: { changePct: number | null }) =>
+                        r.changePct == null ? (
+                          "—"
+                        ) : (
+                          <span className={r.changePct >= 0 ? "text-success" : "text-error"}>
+                            {formatPct(r.changePct)}
+                          </span>
+                        ),
+                    },
+                  ]),
             ]}
           />
         </div>

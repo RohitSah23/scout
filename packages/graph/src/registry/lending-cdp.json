@@ -46,13 +46,35 @@
   {
     "protocol": "Aave V3",
     "chain": "base",
-    "subgraphId": "GQFbb95cE6d8mV989mL5figjaGaKCQB3xqYrr1bRyXqF",
-    "deploymentId": "QmXZ53Kzz3L2LvvbGve2ebtLKWMhjjB1a3U2jnUj2YwGCW",
+    "subgraphId": "D7mapexM5ZsQckLJai2FawTKXJ7CqYGKM8PErnS3cJi9",
+    "deploymentId": "D7mapexM5ZsQckLJai2FawTKXJ7CqYGKM8PErnS3cJi9",
     "schemaVersion": "3.1.0",
     "methodologyVersion": "1.1.0",
-    "queryKind": "aave-v3",
+    "queryKind": "messari",
+    "category": "lending-cdp",
+    "messariSlug": "aave-v3-base"
+  },
+  {
+    "protocol": "Aave V3",
+    "chain": "base",
+    "subgraphId": "GQFbb95cE6d8mV989mL5figjaGaKCQB3xqYrr1bRyXqF",
+    "deploymentId": "QmXZ53Kzz3L2LvvbGve2ebtLKWMhjjB1a3U2jnUj2YwGCW",
+    "schemaVersion": "0.0.5",
+    "methodologyVersion": "1.1.0",
+    "queryKind": "aave-v3-trending",
     "category": "lending-cdp",
     "messariSlug": "aave-v3-base-native"
+  },
+  {
+    "protocol": "Compound V3",
+    "chain": "base",
+    "subgraphId": "2hcXhs36pTBDVUmk5K2Zkr6N4UYGwaHuco2a6jyTsijo",
+    "deploymentId": "QmT7JTVaR2mQplaceholder",
+    "schemaVersion": "1.0.3",
+    "methodologyVersion": "1.0.0",
+    "queryKind": "compound-v3",
+    "category": "lending-cdp",
+    "messariSlug": "compound-v3-base-community"
   },
   {
     "protocol": "Aave V3",
