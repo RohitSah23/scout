@@ -30,3 +30,5 @@ Scout discovers Moonwell, Seamless, Aave, and QiDao on Base. One Messari query t
 - ENS Sepolia success transaction and unauthorized-write revert
 - ENS `agent.mcp` readback and [public MCP update transaction](https://sepolia.etherscan.io/tx/0x968cc1b7fc77a268815be40e55d2d197b11ebdcbb1015f88216c904467e22665)
 - Public app: <https://scout-web-ethglobal-2026.onrender.com>
+- Replayable paid production report: <https://scout-web-ethglobal-2026.onrender.com/research/f28e5c0e-0081-435c-8cad-18b60713534f>
+- Production x402 receipt: <https://sepolia.basescan.org/tx/0xe3bd6a4311c7b5cf49372e1f0bb58905a7b3f9b8c5e8b371c5672cac2307356b>

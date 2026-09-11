@@ -98,6 +98,10 @@ All proof below was produced by real APIs and public testnet transactions on Sep
 
 Both Render services deploy from the public `dev` branch. The versioned [`render.yaml`](render.yaml) contains the complete two-service topology while credentials remain only in Render's encrypted environment.
 
+### Public end-to-end production run
+
+The [replayable production report](https://scout-web-ethglobal-2026.onrender.com/research/f28e5c0e-0081-435c-8cad-18b60713534f) queried five live Base lending subgraphs, composed one Messari template across four protocols, ranked 16 assets, completed OpenSEO enrichment, triggered the uncertainty gate, and bought candidate-specific evidence through the deployed x402 endpoint. The Privy policy-approved payment settled [on Base Sepolia](https://sepolia.basescan.org/tx/0xe3bd6a4311c7b5cf49372e1f0bb58905a7b3f9b8c5e8b371c5672cac2307356b) for 0.03 USDC. The final report selected cbBTC on Aave V3 with a 52.0 opportunity score, 30 risk score, 100% evidence confidence and 21 evidence sources.
+
 ### Network separation
 
 | Flow | Network | Purpose |
@@ -131,6 +135,7 @@ A separate Aave V3 native subgraph (GQFbb95cE6d8mV989mL5figjaGaKCQB3xqYrr1bRyXqF
 | Payee | [0xb92fe771ed8233e5198bf3e61f2f811d90bd524c](https://sepolia.basescan.org/address/0xb92fe771ed8233e5198bf3e61f2f811d90bd524c) |
 | Wallet funding swap | [0x7c771bbf…beff1](https://sepolia.basescan.org/tx/0x7c771bbf6b70ea8b2e3ef229344f924b3bd7ac869462c09f68ef2ccfaf3beff1) — real Uniswap v3 conversion to test USDC |
 | x402 settlement | [0xb66194b3…df537](https://sepolia.basescan.org/tx/0xb66194b37432059c1fba839d66e924281ed5984a5580c6ca2d9ad342a11df537) — 0.03 USDC |
+| Production Render settlement | [0xe3bd6a43…07356b](https://sepolia.basescan.org/tx/0xe3bd6a4311c7b5cf49372e1f0bb58905a7b3f9b8c5e8b371c5672cac2307356b) — 0.03 USDC |
 
 The final research session and UI preserve the payer, payee, amount, network, policy ID, service URL, timestamp, settlement hash and Basescan link in a structured payment receipt.
 

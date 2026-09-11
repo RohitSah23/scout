@@ -36,6 +36,8 @@ The first commit is dated September 5, 2026, after ETHOnline began on September 
 - Privy policy: `eebmveuo1rtadd1pua6vll2x`
 - Wallet funding swap: [0x7c771b…beff1](https://sepolia.basescan.org/tx/0x7c771bbf6b70ea8b2e3ef229344f924b3bd7ac869462c09f68ef2ccfaf3beff1)
 - x402 payment: [0xb66194…df537](https://sepolia.basescan.org/tx/0xb66194b37432059c1fba839d66e924281ed5984a5580c6ca2d9ad342a11df537)
+- Production Render report: <https://scout-web-ethglobal-2026.onrender.com/research/f28e5c0e-0081-435c-8cad-18b60713534f>
+- Production Render x402 payment: [0xe3bd6a…07356b](https://sepolia.basescan.org/tx/0xe3bd6a4311c7b5cf49372e1f0bb58905a7b3f9b8c5e8b371c5672cac2307356b)
 - ENSv2 identity: scout-agent.eth → 0x9BCBB965C4886dDc4ab769f6141a1Ea26a593eaE
 - ENSv2 Permissioned Resolver: [0x846e68…b9dbd](https://sepolia.etherscan.io/address/0x846e68ecd4fEe028C776bf5642D242De762b9dbd)
 - ENSv2 authorized agent write: [0x2b65db…0235b](https://sepolia.etherscan.io/tx/0x2b65dbcf1de552eb8c31ad20d39a84107d6c59fe0b85f572c36461b8a1a0235b)
