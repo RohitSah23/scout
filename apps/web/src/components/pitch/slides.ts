@@ -36,7 +36,7 @@ export const SLIDES: Slide[] = [
     links: [
       {
         href: "https://scout-web-ethglobal-2026-y6tp.onrender.com/",
-        label: "scout-web-ethglobal-2026.onrender.com",
+        label: "scout-web-ethglobal-2026-y6tp.onrender.com",
       },
     ],
     notes:

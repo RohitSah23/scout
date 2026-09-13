@@ -16,6 +16,11 @@ function stopPolling(
   }
 }
 
+// After this many consecutive failed refreshes (~10s at the 2s poll interval) a
+// non-404 error (502s during a Render restart, a dropped connection, ...) is
+// treated as "the server isn't answering" rather than retried forever.
+const MAX_CONSECUTIVE_FAILURES = 5;
+
 export function useResearchStream(researchId: string | null) {
   const [logs, setLogs] = useState<DecisionLogEntry[]>([]);
   const [session, setSession] = useState<ResearchSession | null>(null);
@@ -24,13 +29,22 @@ export function useResearchStream(researchId: string | null) {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [unreachable, setUnreachable] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const esRef = useRef<EventSource | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const failureCountRef = useRef(0);
+
+  const retry = useCallback(() => {
+    failureCountRef.current = 0;
+    setRetryKey((k) => k + 1);
+  }, []);
 
   const refreshSession = useCallback(async () => {
     if (!researchId) return;
     try {
       const data = await fetchSession(researchId);
+      failureCountRef.current = 0;
       setSession(data);
       if (data.status === "completed" || data.status === "failed") {
         setDone(true);
@@ -52,6 +66,18 @@ export function useResearchStream(researchId: string | null) {
         stopPolling(esRef, pollRef);
         return;
       }
+
+      failureCountRef.current += 1;
+      if (failureCountRef.current >= MAX_CONSECUTIVE_FAILURES) {
+        // Not a clean 404 — e.g. repeated 502s while the API restarts — but it's
+        // been failing for a while now. Stop hammering it instead of polling
+        // and reconnecting the stream forever; let the visitor retry manually.
+        setError("Can't reach the Scout API right now. It may be restarting — try again in a moment.");
+        setUnreachable(true);
+        setLoading(false);
+        stopPolling(esRef, pollRef);
+        return;
+      }
       setError("Failed to load session");
     }
   }, [researchId]);
@@ -62,8 +88,11 @@ export function useResearchStream(researchId: string | null) {
     setLoading(true);
     setError(null);
     setDone(false);
+    setNotFound(false);
+    setUnreachable(false);
     setLogs([]);
     setPaymentPending(null);
+    failureCountRef.current = 0;
 
     refreshSession();
 
@@ -143,7 +172,7 @@ export function useResearchStream(researchId: string | null) {
     return () => {
       stopPolling(esRef, pollRef);
     };
-  }, [researchId, refreshSession]);
+  }, [researchId, refreshSession, retryKey]);
 
   return {
     logs,
@@ -153,6 +182,8 @@ export function useResearchStream(researchId: string | null) {
     error,
     done,
     notFound,
+    unreachable,
     refreshSession,
+    retry,
   };
 }

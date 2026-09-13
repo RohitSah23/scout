@@ -17,7 +17,7 @@ import { useResearchStream } from "@/lib/hooks/useResearchStream";
 
 function ResearchDetailContent({ id }: { id: string }) {
   const searchParams = useSearchParams();
-  const { logs, session, paymentPending, loading, error, notFound, refreshSession } =
+  const { logs, session, paymentPending, loading, error, notFound, unreachable, refreshSession, retry } =
     useResearchStream(id);
   const lastLog = logs[logs.length - 1];
   const initialTab = (searchParams.get("tab") as "report" | "evidence" | "timeline") ?? "report";
@@ -32,6 +32,22 @@ function ResearchDetailContent({ id }: { id: string }) {
             note={null}
             onRetry={() => (window.location.href = "/research/new")}
             retryLabel="Start a new research run"
+          />
+        </div>
+      </ScoutShell>
+    );
+  }
+
+  if (unreachable) {
+    return (
+      <ScoutShell session={null} lastLog={undefined}>
+        <div className="max-w-scout mx-auto px-4 md:px-8 py-8 md:py-12">
+          <ErrorState
+            title="CAN'T REACH SCOUT."
+            message={error ?? "Can't reach the Scout API right now."}
+            note={null}
+            onRetry={retry}
+            retryLabel="Try again"
           />
         </div>
       </ScoutShell>
