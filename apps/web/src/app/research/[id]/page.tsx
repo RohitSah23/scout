@@ -17,9 +17,26 @@ import { useResearchStream } from "@/lib/hooks/useResearchStream";
 
 function ResearchDetailContent({ id }: { id: string }) {
   const searchParams = useSearchParams();
-  const { logs, session, paymentPending, loading, error, refreshSession } = useResearchStream(id);
+  const { logs, session, paymentPending, loading, error, notFound, refreshSession } =
+    useResearchStream(id);
   const lastLog = logs[logs.length - 1];
   const initialTab = (searchParams.get("tab") as "report" | "evidence" | "timeline") ?? "report";
+
+  if (notFound) {
+    return (
+      <ScoutShell session={null} lastLog={undefined}>
+        <div className="max-w-scout mx-auto px-4 md:px-8 py-8 md:py-12">
+          <ErrorState
+            title="SESSION NOT FOUND."
+            message={error ?? "This research session no longer exists."}
+            note={null}
+            onRetry={() => (window.location.href = "/research/new")}
+            retryLabel="Start a new research run"
+          />
+        </div>
+      </ScoutShell>
+    );
+  }
 
   return (
     <ScoutShell session={session} lastLog={lastLog}>

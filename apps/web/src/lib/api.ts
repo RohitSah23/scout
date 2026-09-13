@@ -35,9 +35,19 @@ export async function startResearch(body: {
   return res.json();
 }
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 export async function fetchSession(id: string): Promise<ResearchSession> {
   const res = await fetch(`${API_URL}/research/${id}`);
-  if (!res.ok) throw new Error("Session not found");
+  if (!res.ok) throw new ApiError("Session not found", res.status);
   return res.json();
 }
 

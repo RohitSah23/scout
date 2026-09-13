@@ -2,7 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { DecisionLogEntry, PaymentPending, ResearchSession } from "@scout/schemas";
-import { API_URL, fetchSession } from "../api";
+import { ApiError, API_URL, fetchSession } from "../api";
+
+function stopPolling(
+  esRef: React.MutableRefObject<EventSource | null>,
+  pollRef: React.MutableRefObject<ReturnType<typeof setInterval> | null>,
+) {
+  esRef.current?.close();
+  esRef.current = null;
+  if (pollRef.current) {
+    clearInterval(pollRef.current);
+    pollRef.current = null;
+  }
+}
 
 export function useResearchStream(researchId: string | null) {
   const [logs, setLogs] = useState<DecisionLogEntry[]>([]);
@@ -11,6 +23,7 @@ export function useResearchStream(researchId: string | null) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [notFound, setNotFound] = useState(false);
   const esRef = useRef<EventSource | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -27,7 +40,18 @@ export function useResearchStream(researchId: string | null) {
         setPaymentPending(data.paymentPending ?? null);
         setLoading(false);
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        // The session genuinely doesn't exist (e.g. an API restart cleared the
+        // ephemeral store) — retrying forever every 2s just spams the network
+        // and console. Stop for good instead of polling a dead session.
+        setError("This research session no longer exists — it may have been cleared by a server restart. Start a new research run.");
+        setNotFound(true);
+        setLoading(false);
+        setDone(true);
+        stopPolling(esRef, pollRef);
+        return;
+      }
       setError("Failed to load session");
     }
   }, [researchId]);
@@ -108,13 +132,16 @@ export function useResearchStream(researchId: string | null) {
 
     es.onerror = () => {
       setError("Connection lost. Polling for updates.");
+      // The native EventSource will keep retrying this connection on its own.
+      // Check the session directly so a confirmed-gone session (404) stops
+      // both the poll loop and this stream immediately instead of retrying forever.
+      refreshSession();
     };
 
     pollRef.current = setInterval(refreshSession, 2000);
 
     return () => {
-      es.close();
-      if (pollRef.current) clearInterval(pollRef.current);
+      stopPolling(esRef, pollRef);
     };
   }, [researchId, refreshSession]);
 
@@ -125,6 +152,7 @@ export function useResearchStream(researchId: string | null) {
     loading,
     error,
     done,
+    notFound,
     refreshSession,
   };
 }
