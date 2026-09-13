@@ -18,7 +18,7 @@ services:
       - key: PUBLIC_API_URL
         value: https://scout-api-ethglobal-2026-rljy.onrender.com
       - key: DEEP_ANALYSIS_URL
-        value:https://scout-api-ethglobal-2026-rljy.onrender.com/api/deep-protocol-analysis
+        value: https://scout-api-ethglobal-2026-rljy.onrender.com/api/deep-protocol-analysis
       - key: OPENROUTER_MODEL
         value: nex-agi/nex-n2.5-mini:free
       - key: OPENROUTER_BASE_URL
@@ -32,7 +32,7 @@ services:
       - key: BASE_SEPOLIA_RPC_URL
         value: https://sepolia.base.org
       - key: ENS_SEPOLIA_RPC_URL
-        value: https://sepolia.gateway.tenderly.co
+        value: https://ethereum-sepolia-rpc.publicnode.com
       - key: ENS_AGENT_NAME
         value: scout-agent.eth
       - key: PRIVY_REQUIRE_AUTH
