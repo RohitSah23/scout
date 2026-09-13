@@ -17,20 +17,28 @@ const VERIFIED_SESSIONS: SessionStore = {
   [verifiedSession.researchId]: verifiedSession,
 };
 
+let cachedStore: SessionStore | null = null;
+
 function loadStore(): SessionStore {
+  if (cachedStore) return cachedStore;
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
-  if (!existsSync(SESSIONS_FILE)) return { ...VERIFIED_SESSIONS };
+  if (!existsSync(SESSIONS_FILE)) {
+    cachedStore = { ...VERIFIED_SESSIONS };
+    return cachedStore;
+  }
   try {
-    return {
+    cachedStore = {
       ...VERIFIED_SESSIONS,
       ...(JSON.parse(readFileSync(SESSIONS_FILE, "utf8")) as SessionStore),
     };
   } catch {
-    return { ...VERIFIED_SESSIONS };
+    cachedStore = { ...VERIFIED_SESSIONS };
   }
+  return cachedStore;
 }
 
 function saveStore(store: SessionStore): void {
+  cachedStore = store;
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
   writeFileSync(SESSIONS_FILE, JSON.stringify(store, null, 2), "utf8");
 }
