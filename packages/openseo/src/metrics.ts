@@ -75,6 +75,7 @@ export function neutralSeoMetrics(): SeoMetrics {
     competitorSerpDominance: 50,
     developerIntentScore: 20,
     aiVisibilityScore: 0,
+    dataQuality: "neutral-fallback",
   };
 }
 
@@ -136,6 +137,9 @@ export function buildSeoMetrics(
   }
 
   const relevant = rows.filter((row) => rowMatchesProtocol(row, protocol));
+  // No keyword row actually matched this candidate's protocol/asset — falling back to an
+  // unrelated top-20 pool is better than nothing, but it is not this candidate's real
+  // evidence, so it must not be reported as "live" data (dataQuality below).
   const pool = relevant.length > 0 ? relevant : rows.slice(0, 20);
 
   const searchDemandChangePct = pct1(avg(pool.map((r) => trendChangePct(r.trend))));
@@ -165,5 +169,6 @@ export function buildSeoMetrics(
     competitorSerpDominance: competitorSerpDom,
     developerIntentScore,
     aiVisibilityScore: aiVisibilityScore(serpItems),
+    dataQuality: relevant.length > 0 ? "live" : "neutral-fallback",
   };
 }

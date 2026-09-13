@@ -30,9 +30,9 @@ services:
       - key: X402_FACILITATOR_URL
         value: https://x402.org/facilitator
       - key: BASE_SEPOLIA_RPC_URL
-        value: https://sepolia.base.org
+        value: https://base-sepolia.g.alchemy.com/v2/alch_uGJQs3Z9ovYCF3cwNbgC_
       - key: ENS_SEPOLIA_RPC_URL
-        value: https://ethereum-sepolia-rpc.publicnode.com
+        value: https://eth-sepolia.g.alchemy.com/v2/alch_uGJQs3Z9ovYCF3cwNbgC_
       - key: ENS_AGENT_NAME
         value: scout-agent.eth
       - key: PRIVY_REQUIRE_AUTH

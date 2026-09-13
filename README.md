@@ -1,286 +1,443 @@
-# Scout — Autonomous Protocol Intelligence Agent
+# Scout
 
-> **ETHOnline 2026 Hackathon Project**  
-> Scout bridges on-chain protocol activity and live web search demand through an autonomous AI research agent that pays for deep data using machine-native micropayments, operates with on-chain identity and access controls, and enforces treasury spending policies.
+![Node](https://img.shields.io/badge/Node-%3E%3D20-339933?logo=node.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=next.js&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
+![Hono](https://img.shields.io/badge/Hono-4-E36002?logo=hono&logoColor=white)
+![Turborepo](https://img.shields.io/badge/Turborepo-2.3-EF4444?logo=turborepo&logoColor=white)
+![License](https://img.shields.io/badge/license-unspecified-lightgrey)
 
----
+**Scout** is an autonomous on-chain research agent. Given a plain-language prompt and a USDC budget, it queries live DeFi lending data from The Graph, enriches it with web/SEO signals from OpenSEO, scores every candidate with a deterministic six-dimension model, and — only when the top two candidates are genuinely too close to call — autonomously spends a small, policy-capped x402 micropayment to buy one more diagnostic report before publishing its final call and status to an ENS identity.
 
-## 🌟 Overview
+## Table of Contents
 
-Crypto protocols live in two separate worlds:
-1. **On-Chain Activity** (What contracts and users are actually doing) — *powered by The Graph*
-2. **Web & Search Market Demand** (What developers and searchers are looking for) — *powered by OpenSEO*
-
-**Scout** is an autonomous AI analyst that ingests live data across both dimensions, calculates a multi-factor **Opportunity Score**, identifies information gaps, and autonomously buys deep analytical reports using **x402 micropayments** under strict **Privy policy-gated treasuries** and **ENSv2 onchain agent identities**.
-
-```
-                           +------------------------+
-                           |      User Prompt       |
-                           |   "Analyze Base..."    |
-                           +-----------+------------+
-                                       |
-                                       v
-                    +--------------------------------------+
-                    |      @scout/agent-runtime Loop       |
-                    +------------------+-------------------+
-                                       |
-          +----------------------------+----------------------------+
-          |                            |                            |
-          v                            v                            v
-+-------------------+        +-------------------+        +-------------------+
-|     The Graph     |        |      OpenSEO      |        |     Scoring       |
-| Live Graph Gateway |        | Search & SERP MCP |        | Opportunity Matrix|
-+-------------------+        +-------------------+        +---------+---------+
-                                                                    |
-                                                      Uncertainty Gate Triggered
-                                                                    |
-                                                                    v
-                                                          +-------------------+
-                                                          |  x402 Micropayment|
-                                                          | Privy Policy Gated|
-                                                          +---------+---------+
-                                                                    |
-                                                                    v
-                                                          +-------------------+
-                                                          |    ENSv2 Record   |
-                                                          | Status & Attest   |
-                                                          +---------+---------+
-                                                                    |
-                                                                    v
-                                                          +-------------------+
-                                                          | Recommendation UI |
-                                                          | Next.js + SSE Log |
-                                                          +-------------------+
-```
+- [Overview](#overview)
+- [Technology Stack](#technology-stack)
+- [Repository Structure](#repository-structure)
+- [Architecture](#architecture)
+- [API / Service Structure](#api--service-structure)
+- [Core Components](#core-components)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Local Setup](#local-setup)
+- [Environment Variables](#environment-variables)
+- [Application / Feature Details](#application--feature-details)
+- [Database](#database)
+- [Authentication & Security](#authentication--security)
+- [Integrations](#integrations)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [Code Standards](#code-standards)
+- [License](#license)
+- [Support](#support)
 
 ---
 
-## 🏗️ Monorepo Architecture
+## Overview
+
+On-chain activity and web search demand for a DeFi protocol live in two disconnected systems. Scout closes that gap for a narrow, well-defined question — *which lending market on Base is the best opportunity right now* — by running one reproducible pipeline end to end:
+
+- **Discover** — query standardized Messari Lending/CDP subgraphs across multiple Base protocols through The Graph Gateway, using one shared query template plus a native Aave adapter for 1‑hour trending data.
+- **Enrich** — pull keyword, SERP and competitive-gap signals for the same candidates from OpenSEO.
+- **Score** — combine both signal sets into a deterministic, evidence-linked six-dimension opportunity score (0–100) plus a separate risk score. No LLM is involved in the scoring math itself.
+- **Resolve uncertainty** — if the top two candidates are within a few points of each other or confidence is low, Scout pauses the session (`awaiting_payment`) and asks a human to authorize a small x402 micropayment for one candidate-specific diagnostics report, rather than guessing.
+- **Pay autonomously** — once authorized, a policy-controlled Privy server wallet — not the visitor's wallet — signs the x402 payment under a hard-coded budget policy (total cap, per-request cap, recipient allowlist, optional ENS-sourced cap).
+- **Narrate** — an OpenRouter chat completion turns the fixed score breakdown into a short recommendation summary (optional; scoring still works without it).
+- **Publish** — the final status and report hash are written to an ENSv2 name's text records through a role-gated Permissioned Resolver, so the outcome carries an on-chain, access-controlled identity.
+
+Everything streams to the web UI live over Server-Sent Events, and the entire decision log — including any refused payment or missing evidence — is preserved with the session rather than hidden.
+
+## Technology Stack
+
+### Frontend
+
+| Technology | Version | Purpose |
+| --- | --- | --- |
+| Next.js | 15.1.3 (App Router) | `apps/web` — research composer, live investigation timeline, reports library, agent identity page |
+| React | 19.0.0 | UI rendering |
+| Tailwind CSS | 3.4.17 | Styling (neo-brutalist design system, custom CSS tokens in `apps/web/src/styles/tokens.css`) |
+| @privy-io/react-auth | 2.0.0 | Optional visitor login (email or wallet) and embedded-wallet creation |
+| TypeScript | 5.7.2 | Static typing across the whole monorepo |
+
+### Backend
+
+| Technology | Version | Purpose |
+| --- | --- | --- |
+| Hono | 4.6.14 | `apps/api` — REST + SSE server |
+| @hono/node-server | 1.13.7 | Node HTTP adapter for Hono |
+| @modelcontextprotocol/sdk | 1.30.0 | Exposes the research pipeline as an MCP tool at `/mcp` |
+| @privy-io/node | 0.34.0 | Server-side Privy wallet + access-token verification |
+| @x402/core, @x402/evm, @x402/hono | 2.25.0 | Official x402 payment-required middleware, EVM "exact" scheme, and facilitator client |
+| zod | 3.25.76 | Request/response and shared schema validation |
+| tsx | 4.19.2 | TypeScript dev runner (`tsx watch`) |
+
+### CLI
+
+| Technology | Purpose |
+| --- | --- |
+| `apps/agent` (`@scout/agent-cli`, bin `scout-agent`) | Runs one research session headlessly from a terminal, using the same `@scout/agent-runtime` as the API |
+
+### Blockchain / Web3
+
+| Technology | Purpose |
+| --- | --- |
+| viem | EVM client used by both the ENS and x402 packages (account handling, ABI calls, chain definitions) |
+| x402 protocol (`@x402/*`) | HTTP 402 "pay-per-request" middleware and client for the paid diagnostics endpoint |
+| Privy server wallets | Policy-enforced signer for the agent's own x402 payments (visitor never pays or connects a wallet) |
+| The Graph Gateway | Source of live on-chain lending data (Messari Lending/CDP subgraphs, Base) |
+| ENSv2 + Permissioned Resolver | On-chain agent identity (`scout-agent.eth`), text-record status writes, role-bitmap access control (Ethereum Sepolia) |
+| Base Sepolia | Network the x402 USDC micropayment actually settles on (chain `eip155:84532`) |
+
+### Infrastructure
+
+| Technology | Purpose |
+| --- | --- |
+| npm workspaces | Monorepo package management (`apps/*`, `packages/*`, `services/*`) |
+| Turborepo 2.3.3 | Task orchestration/caching for `build`, `dev`, `test`, `lint` across workspaces |
+| Render (`render.yaml`) | Blueprint deployment of two Node web services (API + web), auto-deploying from `main` |
+
+## Repository Structure
 
 ```text
 scout/
 ├── apps/
-│   ├── web/               # Next.js 15 App Router Frontend (Research, Reports, Agent, SSE Timeline, Payment UX)
-│   ├── api/               # Hono REST & SSE Server (Research session runners, x402 endpoints, Bazantic recipes)
-│   └── agent/             # Standalone CLI agent runner for headless research workflows
-├── packages/
-│   ├── agent-runtime/     # Core autonomous research loop and state machine
-│   ├── graph/             # The Graph gateway queries & Messari standardized schema resolvers
-│   ├── openseo/           # OpenSEO MCP client for keyword research, SERP, and domain authority
-│   ├── scoring/           # Deterministic 6-dimension Opportunity Score & Uncertainty Gate
-│   ├── x402/              # HTTP 402 client/facilitator for autonomous USDC micropayments
-│   ├── privy/             # Embedded wallet treasury integration & spending policy enforcement
-│   ├── ens/               # ENSv2 subname resolution, Permissioned Resolver & EAC permissions
-│   ├── bazantic/          # Bazantic tool definitions & research Recipe manifest
-│   ├── llm/               # OpenRouter / OpenAI-compatible LLM narration client
-│   ├── schemas/           # Shared Zod schemas, session types, and adapter interfaces
-│   └── hedera/            # Backup / fallback consensus & attestation adapter
+│   ├── web/                # Next.js 15 dashboard: composer, live SSE timeline, reports, agent identity, pitch deck
+│   ├── api/                 # Hono REST + SSE + MCP server; owns research sessions and the x402 payment gate
+│   └── agent/                # `scout-agent` CLI — one-shot headless research runs
 ├── services/
-│   └── deep-analysis/     # x402-gated microservice providing premium protocol risk/growth reports
-└── docs/                  # In-depth architectural, bounty, demo, and security documentation
+│   └── deep-analysis/        # Library producing the paid, candidate-specific diagnostics report
+├── packages/
+│   ├── agent-runtime/         # Orchestration loop that wires every provider together into one session
+│   ├── schemas/                # Zod schemas shared by every app/package (sessions, candidates, scores, payments)
+│   ├── scoring/                 # Deterministic 6-dimension opportunity score, risk score, uncertainty gate
+│   ├── graph/                    # The Graph Gateway client — Messari Lending/CDP discovery & queries
+│   ├── openseo/                   # OpenSEO MCP client for keyword/SERP enrichment
+│   ├── llm/                        # OpenRouter chat-completion client that narrates the final recommendation
+│   ├── x402/                        # Raw-private-key x402 payment provider + shared budget policy check
+│   ├── privy/                        # Privy server-wallet x402 payment provider (policy-enforced)
+│   ├── ens/                           # ENSv2 identity: name resolution, text records, Permissioned Resolver ACL
+│   ├── bazantic/                       # Static MCP "recipe" manifest for publishing to a Bazantic gateway
+│   └── hedera/                          # Unimplemented Hedera Blocky402 payment-provider stub
+├── scripts/                             # One-off provisioning/verification scripts (Privy, ENS, Graph probes)
+├── docs/                                 # Architecture, security and partner-integration notes
+├── render.yaml                           # Render Blueprint: two-service deployment topology
+└── package.json                          # npm workspaces root + Turborepo scripts
 ```
 
----
+## Architecture
 
-## ✅ Verified Live Hackathon Proof
+```mermaid
+graph TB
+    User[Visitor] -->|prompt + budget| Web[apps/web - Next.js]
+    Web -->|POST /research| API[apps/api - Hono]
+    Web -->|SSE GET /research/:id/stream| API
+    API --> Runtime[agent-runtime orchestration loop]
+    Runtime --> Graph[The Graph Gateway<br/>Messari Lending/CDP - Base]
+    Runtime --> OpenSEO[OpenSEO MCP]
+    Runtime --> Scoring[scoring: 6-dimension model]
+    Scoring --> Gate{Uncertainty gate}
+    Gate -->|clear winner| Narrate[llm: OpenRouter narration]
+    Gate -->|too close: pause| Web
+    Web -->|POST authorize-payment| API
+    API --> Privy[privy: policy wallet]
+    Privy -->|x402 payment| Facilitator[x402 Facilitator]
+    Facilitator --> DeepAnalysis[services/deep-analysis]
+    DeepAnalysis --> Narrate
+    Runtime --> ENS[ens: Permissioned Resolver<br/>Ethereum Sepolia]
+    API --> Store[(.scout-data/sessions.json)]
+```
 
-The proof below was produced by real APIs and public testnet transactions between September 11 and 13, 2026. Scout has no simulated settlement or synthetic ENS receipt path.
+**Data flow**
 
-### Public production deployment
+1. The visitor submits a prompt and a USDC budget from `apps/web`; `apps/api` creates a session and returns immediately while research runs in the background.
+2. `agent-runtime` calls `@scout/graph` to discover and query live Messari Lending/CDP subgraphs on Base, then `@scout/openseo` to enrich the same candidates with search/SERP signals.
+3. `@scout/scoring` produces a ranked, evidence-linked score breakdown and evaluates the uncertainty gate (see [Application / Feature Details](#application--feature-details)).
+4. If the gate fires, the session status flips to `awaiting_payment` and an SSE event tells the UI to show the payment panel; nothing else proceeds until the visitor authorizes or skips it.
+5. On authorization, `@scout/privy` (or the raw-key `@scout/x402` provider) pays `services/deep-analysis` over x402; the settlement transaction reference is required for the payment to be considered successful — there is no simulated fallback.
+6. `@scout/llm` asks OpenRouter to turn the fixed score breakdown into a short recommendation narrative (skipped silently if no API key is set).
+7. `@scout/ens` resolves `scout-agent.eth` and writes the research status to its text records if `ENS_AGENT_NAME` is configured; every session is persisted to a local JSON file regardless of whether the ENS write succeeds.
 
-| Surface | Public endpoint | Verification |
-|---|---|---|
-| Web dashboard | [scout-web-ethglobal-2026.onrender.com](https://scout-web-ethglobal-2026-y6tp.onrender.com/) | Render service is live; production Next.js UI loads and Privy becomes ready |
-| API health | [`/health`](https://scout-api-ethglobal-2026-rljy.onrender.com/health) | Returns `{"ok":true,"service":"scout-api"}` |
-| Agent identity | [`/agent/identity`](https://scout-api-ethglobal-2026-rljy.onrender.com/agent/identity) | Resolves `scout-agent.eth`, EAC permissions, records and the onchain budget |
-| MCP server | [`/mcp`](https://scout-api-ethglobal-2026-rljy.onrender.com/mcp) | Current build passes MCP initialize locally; redeploy is required to replace the stale public instance that returned HTTP 500 during the 13 September readiness check |
-| OpenAPI | [`/openapi.json`](https://scout-api-ethglobal-2026-rljy.onrender.com/openapi.json) | Machine-readable research and x402 service contract |
+## API / Service Structure
 
-Both Render services deploy from the public `dev` branch. The versioned [`render.yaml`](render.yaml) contains the complete two-service topology while credentials remain only in Render's encrypted environment.
+All routes are served by `apps/api` (Hono). There is no separate API gateway.
 
-### Public end-to-end deployed testnet run
+| Method & Path | Purpose |
+| --- | --- |
+| `GET /` | Service banner with links to `/health` and `/openapi.json` |
+| `GET /health` | Health check (used as the Render `healthCheckPath`) |
+| `GET /agent/identity` | Resolves the ENS agent identity, permissions, text records and budget cap |
+| `POST /agent/test-eac` | Exercises the ENS access-control model with an authorized or a deliberately unauthorized write |
+| `GET /research` | Lists research sessions, optionally filtered by `?status=` |
+| `POST /research` | Starts a new research session (`request`, `budget`, `chain`, `category`) |
+| `GET /research/:id` | Fetches one session's full state |
+| `GET /research/:id/stream` | Server-Sent Events stream of the live decision log |
+| `POST /research/:id/authorize-payment` | Authorizes the pending x402 payment for deep analysis |
+| `POST /research/:id/deny-payment` | Skips the paid diagnostics step and finalizes with existing evidence |
+| `POST /api/deep-protocol-analysis` | x402-gated ($0.03 USDC) endpoint that returns candidate-specific diagnostics |
+| `GET /api/protocol-opportunity` | Synchronous one-shot research call (used by the MCP tool and Bazantic recipe) |
+| `GET /bazantic/recipe` | Static MCP "recipe" manifest for a Bazantic gateway |
+| `GET /openapi.json` | OpenAPI 3.1 description of the two research endpoints |
+| `ALL /mcp` | Model Context Protocol endpoint exposing `protocol_opportunity_analysis` |
 
-The [preserved verified report](https://scout-web-ethglobal-2026-y6tp.onrender.com//research/3c47f2ea-52a1-40fc-b0cf-a6776d7c5183) queried all five configured Base lending deployments. Three returned token-level data in that run: two Messari-composable protocols plus the separately labeled native Aave adapter. Scout ranked 11 assets, disclosed two skipped sources and sparse OpenSEO data, triggered the uncertainty gate at a 3.3-point top-two gap, and bought candidate-specific diagnostics through the deployed x402 endpoint. The Privy policy-approved payment settled [on Base Sepolia](https://sepolia.basescan.org/tx/0x487cf199e32403636324c2a2157aa6cd6683d116b5a94932fb47c4765239e6c8) for 0.03 USDC. The report selected sFRAX on Compound V3 with a 51.4 opportunity score, 30 risk score, 100% evidence confidence and 15 evidence sources.
+`POST /research`, `POST /research/:id/authorize-payment` and `POST /research/:id/deny-payment` accept an optional `Authorization: Bearer <privy-access-token>` header; it is verified server-side only when `PRIVY_REQUIRE_AUTH=true`.
 
-A compact copy of that real API response is versioned with the API so the proof route survives Render's ephemeral filesystem. It is a historical evidence snapshot, not a claim that its market data remains live after 13 September 2026.
+## Core Components
 
-### Network separation
+| Component | Role |
+| --- | --- |
+| `@scout/agent-runtime` | Runs the full research loop (`runResearch`, `authorizePaymentAndComplete`, `denyPaymentAndComplete`) and emits every decision-log event |
+| `@scout/schemas` | Single source of truth for the `ResearchSession`, `Candidate`, `CandidateScore`, payment and event types (Zod) |
+| `@scout/scoring` | `scoreCandidate`, `rankCandidates`, `evaluateUncertaintyGate` — the six-dimension model and its decision thresholds |
+| `@scout/graph` | Discovers and queries Messari Lending/CDP subgraph deployments and native trending adapters via the Graph Gateway |
+| `@scout/openseo` | Wraps the OpenSEO MCP client for keyword/SERP/competitive enrichment |
+| `@scout/llm` | Thin OpenRouter chat-completion client used only to narrate the already-computed result |
+| `@scout/x402` | Budget-policy check (`checkBudgetPolicy`) and a raw-private-key x402 payment provider |
+| `@scout/privy` | Policy-enforced x402 payment provider backed by a Privy server wallet |
+| `@scout/ens` | ENSv2 identity provider: `resolveName`, `getPermissions`, `getBudgetCap`, `writeResearchStatus`, `attemptUnauthorizedWrite` |
+| `@scout/bazantic` | Builds the static MCP recipe manifest returned by `/bazantic/recipe` |
+| `@scout/hedera` | `HederaBlocky402Provider` — same `PaymentProvider` interface as x402/Privy, always returns `success: false`; scaffolded but not wired into any app |
+| `@scout/deep-analysis` | `runDeepAnalysis` — produces the paid candidate-specific diagnostics payload |
 
-| Flow | Network | Purpose |
-|---|---|---|
-| Privy + x402 | Base Sepolia (chain 84532) | Policy-controlled USDC payment for paid research |
-| ENSv2 | Ethereum Sepolia (chain 11155111) | Agent identity, records and Enhanced Access Control |
+## Prerequisites
 
-Base Sepolia ETH/USDC cannot be treated as Ethereum Sepolia gas; the two proof flows use separate wallets and explorers.
+### Required
 
-### The Graph — composable standardized data
+- **Node.js** ≥ 20 (root `package.json` `engines.node`)
+- **npm** ≥ 10 (repo is pinned to `npm@10.9.0` via `packageManager`)
+- A **The Graph** Gateway API key (research fails immediately without it)
+- An **OpenSEO** API key (research fails immediately without it)
 
-The same [LENDING_QUERY_TEMPLATE](packages/graph/src/queries.ts) runs against five Messari Lending/CDP deployments on Base:
+### Optional
 
-| Protocol | Graph subgraph/deployment ID | Schema |
-|---|---|---|
-| Moonwell | 33ex1ExmYQtwGVwri1AP3oMFPGSce6YbocBP7fWbsBrg | Messari Lending/CDP 2.0.1 |
-| Seamless Protocol | 2u4mWUV4xS19ef1MbnxZHWLLMwdPxtVifH46JbonXwXP | Messari Lending/CDP 3.1.0 |
-| Compound V3 | AwoxEZbiWLvv6e3QdvdMZw4WDURdGbvPfHmZRc8Dpfz9 | Messari Lending/CDP 3.1.0 |
-| QiDao | 9NHJ9k31qaGCYXppm9isJTiEoiB6v3tJDnR6SrQrxcjw | Messari Lending/CDP 1.3.0 |
-| Aave V3 | D7mapexM5ZsQckLJai2FawTKXJ7CqYGKM8PErnS3cJi9 | Messari Lending/CDP 3.1.0 |
+- An **OpenRouter** API key — without it, sessions still complete but with no narrated recommendation text
+- A **Privy** app (App ID/secret, plus a policy-controlled server wallet ID and policy ID) and a **Base Sepolia** funded wallet — required only to exercise the paid-diagnostics/x402 flow end to end
+- An **ENS Sepolia** RPC URL, a registered `ENS_AGENT_NAME`, and an agent wallet — required only to publish research status on-chain
+- A **Bazantic** account — the recipe manifest is static and works without any credential; `BAZANTIC_API_KEY` is not read by any current code path
 
-A separate Aave V3 native subgraph (GQFbb95cE6d8mV989mL5figjaGaKCQB3xqYrr1bRyXqF, deployment QmXZ53Kzz3L2LvvbGve2ebtLKWMhjjB1a3U2jnUj2YwGCW) supplies one-hour event-level trending data. The preserved verified run evaluated 11 token/market candidates from 15 evidence sources and selected sFRAX on Compound V3 with opportunity score 51.4 and risk score 30. It also discloses that two configured deployments did not return usable token markets in that run.
-
-### Privy + x402 — real financial flow
-
-| Proof | Value |
-|---|---|
-| Privy policy-controlled payer | [0x38B28037192d6b44B537c2c6F717f150a1989E69](https://sepolia.basescan.org/address/0x38B28037192d6b44B537c2c6F717f150a1989E69) |
-| Attached Privy policy ID | eebmveuo1rtadd1pua6vll2x |
-| Policy boundary | Base Sepolia USDC EIP-3009 only; allowlisted payee; maximum 0.10 USDC |
-| Payee | [0xb92fe771ed8233e5198bf3e61f2f811d90bd524c](https://sepolia.basescan.org/address/0xb92fe771ed8233e5198bf3e61f2f811d90bd524c) |
-| Wallet funding swap | [0x7c771bbf…beff1](https://sepolia.basescan.org/tx/0x7c771bbf6b70ea8b2e3ef229344f924b3bd7ac869462c09f68ef2ccfaf3beff1) — real Uniswap v3 conversion to test USDC |
-| x402 settlement | [0xb66194b3…df537](https://sepolia.basescan.org/tx/0xb66194b37432059c1fba839d66e924281ed5984a5580c6ca2d9ad342a11df537) — 0.03 USDC |
-| Earlier Render settlement | [0xe3bd6a43…07356b](https://sepolia.basescan.org/tx/0xe3bd6a4311c7b5cf49372e1f0bb58905a7b3f9b8c5e8b371c5672cac2307356b) — 0.03 USDC |
-| Preserved report settlement | [0x487cf199…39e6c8](https://sepolia.basescan.org/tx/0x487cf199e32403636324c2a2157aa6cd6683d116b5a94932fb47c4765239e6c8) — 0.03 USDC |
-
-The final research session and UI preserve the payer, payee, amount, network, policy ID, service URL, timestamp, settlement hash and Basescan link in a structured payment receipt.
-
-### ENSv2 — identity and scoped EAC
-
-| Proof | Value |
-|---|---|
-| ENS identity | scout-agent.eth |
-| Owner/admin Privy wallet | [0x086f394bDBcD662dC2B1b467D7984827D39881bD](https://sepolia.etherscan.io/address/0x086f394bDBcD662dC2B1b467D7984827D39881bD) |
-| Scoped agent Privy wallet / resolved address | [0x9BCBB965C4886dDc4ab769f6141a1Ea26a593eaE](https://sepolia.etherscan.io/address/0x9BCBB965C4886dDc4ab769f6141a1Ea26a593eaE) |
-| Unauthorized test Privy wallet | [0x2804EA295DB26Fa81099D2326974D400D62d5413](https://sepolia.etherscan.io/address/0x2804EA295DB26Fa81099D2326974D400D62d5413) |
-| Permissioned Resolver proxy | [0x846e68ecd4fEe028C776bf5642D242De762b9dbd](https://sepolia.etherscan.io/address/0x846e68ecd4fEe028C776bf5642D242De762b9dbd) |
-
-Real ENSv2 transaction sequence:
-
-1. [Resolver proxy deployment](https://sepolia.etherscan.io/tx/0x191648c90c3b4ca18aa610cccf69fff12e4908b9e5eafcc24b1e6d3f8bdd3cfc) through the official Verifiable Factory.
-2. [MockUSDC mint](https://sepolia.etherscan.io/tx/0x38f83f35e145b493f4a91dced51c4c7e8765e91378977105f7d0aa470b4ba6bc) and [registrar approval](https://sepolia.etherscan.io/tx/0xdf98999be3c63852da3b0b30225258d713525fdc96a191e267fa5b707ab48f93).
-3. [Commit](https://sepolia.etherscan.io/tx/0xd191da835718dfa44e90088037361a296b6563cbcc5fe8475331ea3f195d5c5e) and, after the mandatory reveal delay, [register scout-agent.eth](https://sepolia.etherscan.io/tx/0x083ac4693d6b38c3052b8e6b20107c55d1b8281dee8cb457cde1934773174231).
-4. [Initialize address/identity records and delegate EAC roles](https://sepolia.etherscan.io/tx/0x5cc3ec6dfc7cbcdc2c5e67d06068e6306c43391aacd4ed825ba0ba8467de6f8d).
-5. [Scoped agent write succeeds](https://sepolia.etherscan.io/tx/0x2b65dbcf1de552eb8c31ad20d39a84107d6c59fe0b85f572c36461b8a1a0235b).
-6. [Unauthorized write is mined and reverts](https://sepolia.etherscan.io/tx/0xebc0c9435af2af0c1146d28b03b526082dd50b3c0556709254f95ae0fec2f831).
-7. [Production MCP record update](https://sepolia.etherscan.io/tx/0x968cc1b7fc77a268815be40e55d2d197b11ebdcbb1015f88216c904467e22665) sets `agent.mcp` to `https://scout-api-ethglobal-2026-rljy.onrender.com/mcp`.
-
-Verified resolver state:
-
-- addr(scout-agent.eth) = 0x9BCBB965C4886dDc4ab769f6141a1Ea26a593eaE
-- agent.type = autonomous-research
-- research.budget = 0.50
-- research.status = ready
-- research.lastReport = provisioning-proof
-- agent.mcp = https://scout-api-ethglobal-2026-rljy.onrender.com/mcp
-- Agent holds record-specific ROLE_SET_TEXT for research.status and research.lastReport
-- Agent does not hold root-level text permission
-
-Scout discovers the current resolver before every write, verifies forward resolution, reads actual EAC bitmaps, and resolves research.budget before authorizing an x402 purchase. ENS is therefore an enforced runtime control, not decorative metadata.
-
-## 🚀 Quick Start & Initialization
-
-### 1. Prerequisites
-- **Node.js**: `v20.0.0` or higher
-- **npm**: `v10.0.0` or higher
-
-### 2. Installation
-
-Clone the repository and install all monorepo dependencies:
+## Quick Start
 
 ```bash
-git clone https://github.com/8dazo/scout.git
+# Clone repository
+git clone https://github.com/RohitSah23/scout.git
+
+# Enter project
 cd scout
+
+# Install dependencies (npm workspaces installs apps/*, packages/*, services/*)
 npm install
-```
 
-### 3. Environment Configuration
-
-Copy the sample environment file to `.env` in the root:
-
-```bash
+# Configure environment
 cp .env.example .env
-```
+# then fill in the keys described in Environment Variables below
 
-Open `.env` and configure your API keys. See **[docs/API_KEYS.md](docs/API_KEYS.md)** for where to obtain each credential (OpenRouter, The Graph, OpenSEO, Privy, x402/CDP, ENS Sepolia, Bazantic).
-
-*(Note: Research requires live `GRAPH_GATEWAY_API_KEY`, `OPENSEO_API_KEY`, and `OPENROUTER_API_KEY`. x402, Privy payments, and ENS fail closed until their live wallet and resolver configuration is present.)*
-
----
-
-## 💻 Running the Application
-
-### Build All Packages
-Compile all packages and TypeScript declarations across the monorepo:
-```bash
-npm run build
-```
-
-### Run in Development Mode
-Start the web dashboard (`localhost:3000`) and the API server (`localhost:3001`) in parallel:
-```bash
+# Start the web dashboard (:3000) and API server (:3001) together
 npm run dev
 ```
 
-- **Web Dashboard**: [http://localhost:3000](http://localhost:3000)
-- **API Server**: [http://localhost:3001](http://localhost:3001)
+## Local Setup
 
-### Run Standalone CLI Agent
-Execute an autonomous research session directly from the command line:
-```bash
-node apps/agent/dist/index.js "Analyze lending protocols on Base. Best developer opportunity?"
+### 1. Database / Infrastructure
+
+None to provision. Scout has no database, Docker Compose file or external cache — session state is written to a local `.scout-data/sessions.json` file the first time a session is saved, and the directory is git-ignored.
+
+### 2. Environment Variables
+
+A single `.env` file at the **repository root** is required — `apps/api/src/index.ts` loads it explicitly via `dotenv` using a path relative to its own source file, so per-app `.env` files in `apps/api` are not read. `apps/web` additionally reads any `NEXT_PUBLIC_*` variable through Next.js's own env loading (an `apps/web/.env.local` can override the root value during `next dev`/`next build`).
+
+```env
+# required
+GRAPH_GATEWAY_API_KEY=your-graph-gateway-key
+OPENSEO_API_KEY=your-openseo-key
+NEXT_PUBLIC_API_URL=http://localhost:3001
+
+# optional — narration
+OPENROUTER_API_KEY=your-openrouter-key
+
+# optional — paid diagnostics over x402
+X402_PAY_TO_ADDRESS=0xyourreceivingaddress
+PRIVY_WALLET_ID=your-privy-server-wallet-id
+PRIVY_POLICY_ID=your-privy-policy-id
+NEXT_PUBLIC_PRIVY_APP_ID=your-privy-app-id
+PRIVY_APP_SECRET=your-privy-app-secret
+
+# optional — publish status to ENS
+ENS_AGENT_NAME=your-agent.eth
+ENS_AGENT_PRIVY_WALLET_ID=your-ens-agent-wallet-id
+ENS_AGENT_WALLET_ADDRESS=0xyourensagentaddress
 ```
 
----
+See [Environment Variables](#environment-variables) below for the full list and [docs/API_KEYS.md](docs/API_KEYS.md) for where to obtain each credential. Never commit a populated `.env` — it is already git-ignored.
 
-## 🎯 Partner Integrations & Bounty Alignment
+### 3. Install Dependencies
 
-| Partner | Role in Scout | Key Code Package |
-|---|---|---|
-| **The Graph** | Live onchain protocol discovery & Messari standardized lending/CDP subgraphs (*"1 query × N protocols"*); each protocol query fetches **top 5 markets** (`inputToken`, TVL, 7d snapshots) and flattens into a **cross-protocol token leaderboard** (Aave uses native 1h trending) | [`packages/graph`](packages/graph) |
-| **OpenSEO** | Internet/search intelligence, keyword search volume, SERP rankings, and competitor gap metrics | [`packages/openseo`](packages/openseo) |
-| **x402** | Machine-native HTTP 402 payment flow for deep analysis reports ($0.03 USDC on Base Sepolia) | [`packages/x402`](packages/x402) |
-| **ENSv2** | Onchain agent identity (scout-agent.eth), Permissioned Resolver, record-scoped Enhanced Access Control, and onchain treasury cap | [`packages/ens`](packages/ens) |
-| **Privy** | Organization treasury embedded wallet, spending policies (per-tx caps, domain allowlists) | [`packages/privy`](packages/privy) |
+```bash
+npm install
+```
 
----
+### 4. Database Setup
 
-## 📊 Opportunity Scoring Model
+Not applicable — there is no schema, migration or seed step.
 
-Scout's implemented `scout-v1` model scores candidates across **6 evidence dimensions** (0–100 scale):
+### 5. Start Development Server
 
-1. **Onchain Growth (30%)**: TVL, volume and transaction change.
-2. **User Growth (20%)**: Active-address and new-user change, with a concentration penalty when transaction growth materially outpaces users.
-3. **Search Demand (20%)**: Search-volume and developer-intent signals.
-4. **Competitive Gap (15%)**: The difference between observed onchain rank and web visibility.
-5. **SEO Opportunity (10%)**: Content-gap and organic-visibility signals.
-6. **Evidence Confidence (5%)**: Coverage and quality of the evidence available to the candidate.
+```bash
+npm run dev        # web (3000) + api (3001) via Turborepo
+npm run dev:all    # every workspace's own dev script, in parallel
+```
 
-Risk is reported separately from the opportunity composite. The model is deterministic and evidence-linked; it is a research heuristic, not a mathematically objective prediction.
+### 6. Standalone CLI
 
-### The Uncertainty Gate
-Scout requests payment authorization for candidate-specific diagnostics when the top-two Opportunity Score gap is `≤ 5 points` **or** confidence is `< 70%`, provided the budget can cover the $0.03 service. A result is treated as clearly resolved without payment only when the leader is ahead by `> 10 points` **and** confidence is `≥ 75%`. In the web flow, the visitor must authorize the agent treasury spend before Scout pays over x402.
+```bash
+npm run build -w @scout/agent-cli
+node apps/agent/dist/index.js "Rank the top lending assets across Base protocols. $0.50 budget."
+```
 
----
+The CLI shares `@scout/agent-runtime` with the API and reads the same root `.env`.
 
-## 🛠️ Monorepo Scripts
+## Environment Variables
 
-- `npm run dev` — Start Next.js web and Hono API concurrently with hot reloading.
-- `npm run build` — Build all packages with Turborepo dependency caching.
-- `npm run test` — Run unit and integration test suites.
-- `npm run lint` — Lint code across all workspaces.
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `GRAPH_GATEWAY_API_KEY` | Yes | The Graph Gateway key; `runResearch` throws immediately without it |
+| `OPENSEO_API_KEY` | Yes | OpenSEO MCP key; `runResearch` throws immediately without it |
+| `OPENSEO_PROJECT_ID` | No | Scopes OpenSEO queries to an existing project |
+| `NEXT_PUBLIC_API_URL` | Yes (web) | Base URL `apps/web` calls for every API request |
+| `OPENROUTER_API_KEY` | No | Enables narrated recommendations; silently skipped if absent |
+| `OPENROUTER_MODEL` | No | Chat-completion model id (default `anthropic/claude-3.5-sonnet`) |
+| `OPENROUTER_BASE_URL` | No | OpenAI-compatible endpoint override (default `https://openrouter.ai/api/v1`) |
+| `OPENROUTER_SITE_URL` / `OPENROUTER_SITE_NAME` | No | Sent as `HTTP-Referer` / `X-Title` to OpenRouter |
+| `X402_PAY_TO_ADDRESS` | For paid diagnostics | Recipient of the $0.03 USDC payment; also required to enable the `/api/deep-protocol-analysis` 402 middleware at all |
+| `X402_FACILITATOR_URL` | No | x402 facilitator (default `https://x402.org/facilitator`) |
+| `X402_FACILITATOR_API_KEY_ID` / `X402_FACILITATOR_API_KEY_SECRET` | No | Only needed for an authenticated production facilitator — the public testnet facilitator needs no key |
+| `X402_PRIVATE_KEY` | No | Raw EVM private key for the non-Privy `X402PaymentProvider` path |
+| `BASE_SEPOLIA_RPC_URL` | No | Default `https://sepolia.base.org` |
+| `NEXT_PUBLIC_PRIVY_APP_ID` / `PRIVY_APP_SECRET` | For paid diagnostics | Privy app credentials, used by both the web login and the API's server wallet |
+| `PRIVY_WALLET_ID` / `PRIVY_POLICY_ID` | For paid diagnostics | The policy-controlled wallet that actually signs the x402 payment |
+| `PRIVY_REQUIRE_AUTH` | No | When `"true"`, `/research*` routes require a verified Privy access token |
+| `ENS_SEPOLIA_RPC_URL` | No | Default `https://ethereum-sepolia-rpc.publicnode.com` |
+| `ENS_AGENT_NAME` | No, but load-bearing once set | When set, every session resolves this name and **requires** a usable agent wallet below, or the run fails |
+| `ENS_AGENT_PRIVY_WALLET_ID` / `ENS_AGENT_WALLET_ADDRESS` | Required once `ENS_AGENT_NAME` is set | Wallet that signs ENS text-record writes (or use `ENS_AGENT_PRIVATE_KEY` instead) |
+| `ENS_AGENT_PRIVATE_KEY` | No | Local-key fallback for the agent wallet above |
+| `ENS_UNAUTHORIZED_PRIVY_WALLET_ID` / `ENS_UNAUTHORIZED_WALLET_ADDRESS` / `ENS_UNAUTHORIZED_PRIVATE_KEY` | No | Only used by `/agent/test-eac`'s unauthorized-write demo |
+| `ENS_OWNER_PRIVY_WALLET_ID` / `ENS_OWNER_WALLET_ADDRESS` / `ENS_DEPLOYER_PRIVATE_KEY` / `ENS_PARENT_NAME` | No | Only used by the one-off scripts in `scripts/` |
+| `ENS_PERMISSIONED_RESOLVER_ADDRESS` | No | Not currently read by any code path in the repository |
+| `BAZANTIC_API_KEY` | No | Not currently read by any code path in the repository — the recipe manifest is static |
+| `API_PORT` | No | Local dev port for `apps/api` (default `3001`); Render supplies `PORT` itself in production |
+| `PUBLIC_API_URL` | No | Used to build the self-referential OpenAPI server URL and the Bazantic recipe endpoint |
+| `DEEP_ANALYSIS_URL` | No | Default `http://127.0.0.1:<port>/api/deep-protocol-analysis` |
 
----
+## Application / Feature Details
 
-## 📚 Documentation Directory
+### Research Composer & Live Investigation (`/`, `/research/new`, `/research/[id]`)
 
-- [docs/API_KEYS.md](docs/API_KEYS.md) — Where to obtain every credential in `.env.example`.
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — System architecture, data flow diagrams, and adapter design patterns.
-- [docs/DEMO.md](docs/DEMO.md) — 3:30 Hackathon video script, sample prompts, and captured proof artifacts.
-- [docs/PARTNERS.md](docs/PARTNERS.md) — Detailed integration technicalities for each partner prize.
-- [docs/BOUNTIES.md](docs/BOUNTIES.md) — Target bounty checklist, eligibility criteria, and submission tracks.
-- [docs/SECURITY.md](docs/SECURITY.md) — Treasury safety, Privy policy gates, and ENS access controls.
-- [scout_ethonline2026_full_info_dump.md](scout_ethonline2026_full_info_dump.md) — Comprehensive master product specification.
+A visitor types a prompt and a USDC budget; the UI streams the resulting decision log live over SSE — subgraph discovery, OpenSEO enrichment, provisional scores, the uncertainty-gate verdict, payment authorization, and the final recommendation — alongside an evidence drawer for the raw candidate data.
 
----
+### Reports Library (`/reports`)
 
-## ⚖️ License
+Lists every past session via `GET /research`, including its winner, composite score, confidence and spend.
 
-MIT License. Built with ❤️ for ETHOnline 2026.
+### Agent Identity (`/agent`)
+
+Calls `GET /agent/identity` to show the resolved ENS name, its granted text-record permissions, current records and on-chain budget cap, and offers the authorized-vs-unauthorized EAC write test described below.
+
+### Pitch Deck (`/pitch-deck`)
+
+A static in-app slide deck (`components/pitch/PitchDeck.tsx`) used for presenting the project; not part of the research pipeline.
+
+### The Uncertainty Gate and the six-dimension score
+
+`@scout/scoring` weights six evidence dimensions into one composite (0–100): `onchainGrowth` (0.3), `userGrowth` (0.2), `searchDemand` (0.2), `competitiveGap` (0.15), `seoOpportunity` (0.1), `evidenceConfidence` (0.05). A separate risk score is computed independently. The gate pays for one more diagnostics report only when the top two candidates are within 5 points of each other **or** confidence is below 70, provided the remaining budget covers the $0.03 price and that pair hasn't already been paid for; a lead of more than 10 points with confidence ≥ 75 is treated as a clear winner and no payment is requested.
+
+### Blockchain
+
+- **Networks**: Base (mainnet, read-only) for live lending-market data; Base Sepolia (testnet, `eip155:84532`) for the actual x402 USDC settlement; Ethereum Sepolia (testnet) for the ENSv2 identity and resolver.
+- **Contracts**: no contracts are deployed by this repository. It writes to an existing ENS **Permissioned Resolver** (`setText`, `multicall`, `roles`, `hasRootRoles`) and reads standard Messari Lending/CDP subgraph schemas.
+- **Wallets**: Privy-managed server wallets, bridged to `viem` accounts via `@privy-io/node`'s `createViemAccount` — one for the payment policy, one for ENS writes (each falls back to a raw local private key if configured instead).
+- **Tokens/transactions**: USDC only, moved via the x402 "exact" EVM scheme (EIP-3009-style authorization), capped at $0.10 per request and $0.03 per deep-analysis purchase; every payment requires a verifiable settlement transaction reference or it is treated as a failure — there is no simulated receipt path.
+
+## Database
+
+Scout has no relational or document database. `apps/api/src/store.ts` persists every `ResearchSession` as a JSON value inside a single `.scout-data/sessions.json` file (created on first write, git-ignored), plus one bundled `verified-session.json` shipped with the API so a known-good demo session survives an ephemeral filesystem. There is no ORM and no migration system — the shape of the data is enforced entirely by the `ResearchSessionSchema` Zod schema in `@scout/schemas`.
+
+## Authentication & Security
+
+- **No traditional accounts.** Visitor login is optional and handled by `@privy-io/react-auth` in `apps/web` (email or wallet, with an embedded wallet auto-created on first login).
+- **Server-side verification is opt-in.** `apps/api` only checks the visitor's Privy access token (`PrivyClient.utils().auth().verifyAccessToken`) when `PRIVY_REQUIRE_AUTH=true`; otherwise `/research*` routes are open.
+- **The visitor never pays.** All x402 spending is signed by a separate, policy-controlled Privy server wallet — never the visitor's own wallet or session.
+- **Spending policy** (`@scout/x402`'s `checkBudgetPolicy`, enforced before every payment): a total session budget, a hard $0.10 per-request cap, a recipient allowlist, and — when `ENS_AGENT_NAME` is set — an additional cap read live from the ENS `research.budget` text record.
+- **ENS access control.** The agent wallet holds only a scoped `ROLE_SET_TEXT` bit for specific text-record resources on the Permissioned Resolver; only the separately-held owner wallet can transfer the name or change the resolver. `POST /agent/test-eac` exercises both an authorized write and a deliberately unauthorized one so the access-control revert is visible, not just asserted.
+- **No secrets in the client.** Only `NEXT_PUBLIC_*` variables (the Privy app ID and the API base URL) are exposed to the browser; every private key, app secret and wallet ID stays server-side.
+
+## Integrations
+
+| Service | Why it's used | Where |
+| --- | --- | --- |
+| **The Graph** | Load-bearing source of live on-chain lending data — research fails closed if it can't be reached. Queries standardized Messari Lending/CDP subgraph deployments through the Graph Gateway, plus one native Aave adapter for 1‑hour trending data. | `packages/graph` |
+| **OpenSEO** | Load-bearing source of search/SERP/competitive signal for the same candidates, via OpenSEO's MCP endpoint. | `packages/openseo` |
+| **x402** | HTTP-402 "pay-per-request" protocol for the paid diagnostics endpoint. The official `@x402/hono` middleware plus an `HTTPFacilitatorClient` verify and settle payments against a configurable facilitator (defaults to the public testnet facilitator, no key required). | `apps/api`, `packages/x402` |
+| **Privy** | Provides both the optional visitor login and the policy-controlled server wallet that actually signs x402 payments; a wallet is refused at pay-time if it doesn't enforce the expected policy ID. | `apps/web/src/app/providers.tsx`, `packages/privy` |
+| **ENSv2** | On-chain agent identity (`ENS_AGENT_NAME`) with status/budget text records behind a role-gated Permissioned Resolver. | `packages/ens` |
+| **OpenRouter** | Optional OpenAI-compatible chat-completion call that narrates the already-computed score breakdown into readable text. | `packages/llm` |
+| **Bazantic** | Static MCP "recipe" manifest describing how to import Scout's research tool into a Bazantic gateway; marked `"status": "integration-template"` — no credential is currently read for it. | `packages/bazantic` |
+| **Hedera (Blocky402)** | Scaffolded alternative `PaymentProvider` for a Hedera-based x402 facilitator; not implemented and not wired into any app (`pay()` always returns `success: false`). | `packages/hedera` |
+
+## Testing
+
+Only `@scout/scoring` currently ships automated tests:
+
+```bash
+npm run test -w @scout/scoring   # vitest run
+npm run test                      # turbo run test — runs every workspace's test script (only scoring defines one)
+```
+
+No end-to-end or load tests are configured in the repository.
+
+## Deployment
+
+Deployment is defined entirely by [`render.yaml`](render.yaml) — a Render Blueprint with two Node web services, both on the free plan in the Oregon region, building with `npm ci --include=dev && npm run build` and auto-deploying on every push to `main`:
+
+| Service | Start command | Health check |
+| --- | --- | --- |
+| `scout-api-ethglobal-2026` | `npm run start -w @scout/api` | `/health` |
+| `scout-web-ethglobal-2026` | `npm run start -w @scout/web -- --hostname 0.0.0.0 --port $PORT` | `/` |
+
+A handful of env vars are given literal values directly in `render.yaml` (e.g. `ENS_AGENT_NAME`, `X402_FACILITATOR_URL`); the rest are marked `sync: false` and must be entered manually in the Render dashboard for each service — they are **not** populated from the repository or from a local `.env`. There is no Dockerfile and no CI/CD pipeline configured (no `.github/workflows`); Render's own build step is the only automated check before a deploy.
+
+## Troubleshooting
+
+- **`GRAPH_GATEWAY_API_KEY is required...` / `OPENSEO_API_KEY is required...`** — both are hard requirements checked at the start of every research run. Confirm a single `.env` exists at the **repository root** (not inside `apps/api`) and restart the dev server after editing it.
+- **`authorize-payment` returns 500 with `ENS agent wallet is required...`** — happens whenever `ENS_AGENT_NAME` is set but neither `ENS_AGENT_PRIVY_WALLET_ID` + `ENS_AGENT_WALLET_ADDRESS` nor `ENS_AGENT_PRIVATE_KEY` resolve to a usable account. Either provide a valid agent wallet or unset `ENS_AGENT_NAME` to disable ENS entirely for local development.
+- **`/api/deep-protocol-analysis` returns 503 `x402 pay-to address is not configured`** — `X402_PAY_TO_ADDRESS` is missing or isn't a valid `0x` + 40-hex-character address.
+- **Payment authorization fails with a Privy policy error** — `PrivyX402PaymentProvider` refuses to pay if the configured `PRIVY_WALLET_ID` doesn't have `PRIVY_POLICY_ID` attached in the Privy dashboard.
+- **401 Unauthorized on `/research*` routes** — set `PRIVY_REQUIRE_AUTH=false` for local development, or send a valid Privy access token from a logged-in web session.
+- **Port already in use** — `apps/api` defaults to `3001` (override with `API_PORT`), `apps/web` defaults to `3000` (`next dev -p 3000`).
+- **A workspace package's types aren't found during build** — run `npm run build` from the repository root so Turborepo builds dependency packages (e.g. `@scout/schemas`) before the apps that import them, rather than building an individual app in isolation.
+
+## Contributing
+
+1. Fork the repository and clone your fork.
+2. `npm install` at the repository root.
+3. Create a feature branch off `main`.
+4. Make your changes; build the affected workspace(s) with `npm run build` (or `npm run build -w <package>`).
+5. Run `npm run test` — currently exercises `@scout/scoring`'s suite.
+6. Open a pull request describing the change and its motivation.
+
+## Code Standards
+
+- **TypeScript everywhere**, compiled with a shared `tsconfig.base.json`: `strict: true`, ES2022 target, `NodeNext` module resolution.
+- Every package is an ES module (`"type": "module"`) built with `tsc` to `dist/`.
+- The root `package.json` defines a `lint` script (`turbo run lint`), but no individual workspace currently declares its own `lint` script or ESLint/Prettier configuration — linting is not currently enforced.
+
+## License
+
+No license has been specified yet.
+
+## Support
+
+- **Issues**: use the repository's GitHub Issues tracker.
+- **Documentation**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/SECURITY.md](docs/SECURITY.md), [docs/PARTNERS.md](docs/PARTNERS.md), [docs/API_KEYS.md](docs/API_KEYS.md) (credential setup), [docs/DEMO.md](docs/DEMO.md).
+
+No Discord, email or other support channel is documented in the repository.

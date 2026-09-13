@@ -51,6 +51,10 @@ export const SourceSchema = z.object({
 
 export type Source = z.infer<typeof SourceSchema>;
 
+export const DataQualitySchema = z.enum(["live", "insufficient-history", "neutral-fallback"]);
+
+export type DataQuality = z.infer<typeof DataQualitySchema>;
+
 export const OnchainMetricsSchema = z.object({
   tvlChangePct: z.number().optional(),
   volumeChangePct: z.number().optional(),
@@ -59,6 +63,8 @@ export const OnchainMetricsSchema = z.object({
   newUsersChangePct: z.number().optional(),
   returningUserRatio: z.number().optional(),
   priorPeriodGrowthPct: z.number().optional(),
+  /** Whether the change figures above came from real historical snapshots ("live") or a fallback because too little history was available. Absent means computed before this field existed. */
+  dataQuality: DataQualitySchema.optional(),
 });
 
 export type OnchainMetrics = z.infer<typeof OnchainMetricsSchema>;
@@ -70,6 +76,8 @@ export const SeoMetricsSchema = z.object({
   competitorSerpDominance: z.number().optional(),
   developerIntentScore: z.number().optional(),
   aiVisibilityScore: z.number().optional(),
+  /** "live" when keyword rows actually matched this candidate's protocol; "neutral-fallback" when OpenSEO had no data or we fell back to an unrelated keyword pool. */
+  dataQuality: DataQualitySchema.optional(),
 });
 
 export type SeoMetrics = z.infer<typeof SeoMetricsSchema>;

@@ -25,7 +25,11 @@ query LendingProtocolMetrics($first: Int!) {
     totalBorrowBalanceUSD
     inputToken { symbol decimals }
   }
-  marketSnapshots: marketDailySnapshots(first: 50, orderBy: timestamp, orderDirection: desc) {
+  # first: 1000 (subgraph max) — this pool is shared across all 25 markets above, not
+  # per-market. At first: 50 most individual markets got zero matching snapshots and
+  # silently fell back to a fake 0% change (see tokenCandidates.ts); 1000 gives smaller
+  # markets a real chance at having their own history in the window too.
+  marketSnapshots: marketDailySnapshots(first: 1000, orderBy: timestamp, orderDirection: desc) {
     timestamp
     totalValueLockedUSD
     dailyDepositUSD

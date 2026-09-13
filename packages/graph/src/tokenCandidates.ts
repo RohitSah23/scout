@@ -41,6 +41,21 @@ function metricsFromMessariMarket(
   market: MessariMarket,
   snapshots: MessariMarketSnapshot[],
 ): OnchainMetrics {
+  // No history at all for this specific market (common when the shared snapshot pool
+  // didn't happen to cover it) — say so explicitly instead of faking a 0% change that
+  // looks identical to genuine "no movement".
+  if (snapshots.length === 0) {
+    return {
+      tvlChangePct: 0,
+      volumeChangePct: 0,
+      txChangePct: 0,
+      activeAddressesChangePct: 0,
+      newUsersChangePct: 0,
+      priorPeriodGrowthPct: 0,
+      dataQuality: "insufficient-history",
+    };
+  }
+
   const sorted = [...snapshots].sort(
     (a, b) => Number(b.timestamp ?? 0) - Number(a.timestamp ?? 0),
   );
@@ -68,6 +83,9 @@ function metricsFromMessariMarket(
     activeAddressesChangePct: volumeChange,
     newUsersChangePct: pct1(volumeChange * 0.85),
     priorPeriodGrowthPct: tvlChange,
+    // A single snapshot still lets us diff against the live market value below, but it's
+    // a thin signal (one data point) rather than a real trend across the window.
+    dataQuality: sorted.length < 2 ? "insufficient-history" : "live",
   };
 }
 
@@ -163,6 +181,8 @@ export function extractAaveTrendingTokenCandidates(
         activeAddressesChangePct: pct1(row.txCount),
         newUsersChangePct: pct1(row.txCount * 0.5),
         priorPeriodGrowthPct: netPct,
+        // Built from real 1h on-chain events (supplies/borrows/repays/liquidations), not a fallback.
+        dataQuality: "live",
       },
       provenance: {
         subgraphId: dep.subgraphId,
