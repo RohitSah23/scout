@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
@@ -13,9 +14,11 @@ export function ResearchComposer({
   onPromptChange: (value: string) => void;
 }) {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   function handleSubmit() {
-    if (!prompt.trim()) return;
+    if (!prompt.trim() || loading) return;
+    setLoading(true);
     router.push(`/research/new?prompt=${encodeURIComponent(prompt)}`);
   }
 
@@ -29,7 +32,12 @@ export function ResearchComposer({
         placeholder="Analyze the most promising lending protocol on Base for a developer product…"
         className="text-lg min-h-[120px]"
       />
-      <Button onClick={handleSubmit} disabled={!prompt.trim()} className="group gap-3">
+      <Button
+        onClick={handleSubmit}
+        loading={loading}
+        disabled={!prompt.trim()}
+        className="group gap-3"
+      >
         <span>Run Research</span>
         <ArrowRightIcon className="w-5 h-5 transition-transform group-hover:translate-x-1" strokeWidth={2.5} />
       </Button>

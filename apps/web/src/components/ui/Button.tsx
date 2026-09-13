@@ -1,4 +1,5 @@
 import { type ButtonHTMLAttributes } from "react";
+import { Spinner } from "@/components/ui/Spinner";
 
 type Variant = "primary" | "secondary" | "danger" | "ghost";
 
@@ -28,7 +29,14 @@ export function Button({
       disabled={disabled || loading}
       {...props}
     >
-      {loading ? "Working…" : children}
+      {loading ? (
+        <>
+          <Spinner />
+          <span>Working…</span>
+        </>
+      ) : (
+        children
+      )}
     </button>
   );
 }
